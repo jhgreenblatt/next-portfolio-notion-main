@@ -10,6 +10,7 @@ export default function Hero({ title, subtitle }: { title: string; subtitle?: st
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
+        whileHover={{ scale: 1.02 }}
       >
         {title}
       </motion.h1>

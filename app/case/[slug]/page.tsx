@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { fetchCaseStudyBySlug } from "@/lib/notion";
 import NotionRenderer from "@/components/NotionRenderer";
+import TagsWithOverflow from "@/components/TagsWithOverflow";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -31,55 +32,41 @@ export default async function CasePage({ params }: Params) {
         <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">{data.title}</h1>
         
         {/* Company Info and Tags Row */}
-        <div className="flex items-center gap-4 flex-wrap">
-          {/* Company Logo and Name */}
-          <div className="flex items-center gap-3">
-            {data.companyLogo && (
-              <div className="w-8 h-6 bg-gray-800 rounded flex items-center justify-center">
-                <Image 
-                  src={data.companyLogo} 
-                  alt={data.companyName || "Company logo"} 
-                  width={24} 
-                  height={16}
-                  className="object-contain"
-                  unoptimized={true}
-                />
-              </div>
-            )}
-            {data.companyName && (
-              <span className="text-base font-medium">{data.companyName}</span>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          {/* Left side: Company Logo, Name, and Role */}
+          <div className="flex items-center gap-4 flex-wrap">
+            {/* Company Logo and Name */}
+            <div className="flex items-center gap-3">
+              {data.companyLogo && (
+                <div className="h-6 flex items-center">
+                  <Image 
+                    src={data.companyLogo} 
+                    alt={data.companyName || "Company logo"} 
+                    width={0}
+                    height={24}
+                    className="h-6 w-auto object-contain"
+                    unoptimized={true}
+                  />
+                </div>
+              )}
+              {data.companyName && (
+                <span className="text-base font-medium">{data.companyName}</span>
+              )}
+            </div>
+            
+            {/* Role */}
+            {data.role && (
+              <span className="text-base text-gray-600">{data.role}</span>
             )}
           </div>
           
-          {/* Role */}
-          {data.role && (
-            <span className="text-base text-gray-600">{data.role}</span>
-          )}
-          
-          {/* Tags */}
+          {/* Right side: Tags with max width */}
           {data.tags && data.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {data.tags.slice(0, 3).map((tag, index) => (
-                <span 
-                  key={index}
-                  className="text-sm border border-gray-300 rounded-full px-3 py-1"
-                >
-                  {tag}
-                </span>
-              ))}
-              {data.tags.length > 3 && (
-                <span className="text-sm border border-gray-300 rounded-full px-3 py-1">
-                  ...
-                </span>
-              )}
+            <div className="max-w-xs">
+              <TagsWithOverflow tags={data.tags} maxVisible={2} />
             </div>
           )}
         </div>
-        
-        {/* Summary */}
-        {data.summary && (
-          <p className="mt-6 text-lg text-gray-700 leading-relaxed max-w-4xl">{data.summary}</p>
-        )}
         
         {/* External Link */}
         {data.externalLink && (

@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+import DynamicLayout from "./DynamicLayout";
 
 // Comprehensive Notion block types
 export type NotionBlock = {
@@ -60,112 +61,142 @@ function renderRichText(richText: NotionBlock['richText']) {
 }
 
 export default function NotionRenderer({ blocks }: { blocks: NotionBlock[] }) {
+  // Group blocks into layout sections
+  const layoutSections: NotionBlock[][] = [];
+  let currentSection: NotionBlock[] = [];
+  
+  blocks.forEach((block, index) => {
+    // Start a new section on major headings
+    if (block.type.startsWith('heading') && currentSection.length > 0) {
+      layoutSections.push([...currentSection]);
+      currentSection = [block];
+    } else {
+      currentSection.push(block);
+    }
+    
+    // Push the last section
+    if (index === blocks.length - 1) {
+      layoutSections.push([...currentSection]);
+    }
+  });
+  
   return (
     <div className="prose prose-gray max-w-none">
-      {blocks.map((block, i) => {
-        switch (block.type) {
-          case "heading_1":
-            return (
-              <h1 key={i} className="text-3xl font-bold mt-8 mb-4 text-gray-900">
-                {block.richText ? renderRichText(block.richText) : block.text}
-              </h1>
-            );
-          
-          case "heading_2":
-            return (
-              <h2 key={i} className="text-2xl font-semibold mt-6 mb-3 text-gray-900">
-                {block.richText ? renderRichText(block.richText) : block.text}
-              </h2>
-            );
-          
-          case "heading_3":
-            return (
-              <h3 key={i} className="text-xl font-medium mt-5 mb-2 text-gray-900">
-                {block.richText ? renderRichText(block.richText) : block.text}
-              </h3>
-            );
-          
-          case "paragraph":
-            return (
-              <p key={i} className="mb-4 text-gray-700 leading-relaxed">
-                {block.richText ? renderRichText(block.richText) : block.text}
-              </p>
-            );
-          
-          case "bulleted_list_item":
-            return (
-              <li key={i} className="mb-2 text-gray-700">
-                {block.richText ? renderRichText(block.richText) : block.text}
-              </li>
-            );
-          
-          case "numbered_list_item":
-            return (
-              <li key={i} className="mb-2 text-gray-700">
-                {block.richText ? renderRichText(block.richText) : block.text}
-              </li>
-            );
-          
-          case "image":
-            return (
-              <div key={i} className="my-6">
-                {block.url && (
-                  <div className="relative aspect-video rounded-lg overflow-hidden border border-gray-200">
-                    <Image
-                      src={block.url}
-                      alt={block.caption || 'Notion image'}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
-                {block.caption && (
-                  <p className="text-sm text-gray-500 mt-2 text-center italic">
-                    {block.caption}
-                  </p>
-                )}
-              </div>
-            );
-          
-          case "quote":
-            return (
-              <blockquote key={i} className="border-l-4 border-blue-500 pl-4 my-4 italic text-gray-600">
-                {block.richText ? renderRichText(block.richText) : block.text}
-              </blockquote>
-            );
-          
-          case "callout":
-            return (
-              <div key={i} className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-4">
-                <div className="flex items-start">
-                  <div className="text-blue-600 mr-3">💡</div>
-                  <div className="text-blue-800">
-                    {block.richText ? renderRichText(block.richText) : block.text}
+      {layoutSections.map((section, sectionIndex) => {
+        // Try dynamic layout first
+        const dynamicLayout = <DynamicLayout blocks={section} />;
+        
+        if (dynamicLayout) {
+          return <div key={sectionIndex}>{dynamicLayout}</div>;
+        }
+        
+        // Fall back to individual block rendering
+        return section.map((block, blockIndex) => {
+          switch (block.type) {
+            case "heading_1":
+              return (
+                <h1 key={`${sectionIndex}-${blockIndex}`} className="text-3xl font-bold mt-8 mb-4 text-gray-900">
+                  {block.richText ? renderRichText(block.richText) : block.text}
+                </h1>
+              );
+            
+            case "heading_2":
+              return (
+                <h2 key={`${sectionIndex}-${blockIndex}`} className="text-2xl font-semibold mt-6 mb-3 text-gray-900">
+                  {block.richText ? renderRichText(block.richText) : block.text}
+                </h2>
+              );
+            
+            case "heading_3":
+              return (
+                <h3 key={`${sectionIndex}-${blockIndex}`} className="text-xl font-medium mt-5 mb-2 text-gray-900">
+                  {block.richText ? renderRichText(block.richText) : block.text}
+                </h3>
+              );
+            
+            case "paragraph":
+              return (
+                <p key={`${sectionIndex}-${blockIndex}`} className="mb-4 text-gray-700 leading-relaxed">
+                  {block.richText ? renderRichText(block.richText) : block.text}
+                </p>
+              );
+            
+            case "bulleted_list_item":
+              return (
+                <li key={`${sectionIndex}-${blockIndex}`} className="mb-2 text-gray-700">
+                  {block.richText ? renderRichText(block.richText) : block.text}
+                </li>
+              );
+            
+            case "numbered_list_item":
+              return (
+                <li key={`${sectionIndex}-${blockIndex}`} className="mb-2 text-gray-700">
+                  {block.richText ? renderRichText(block.richText) : block.text}
+                </li>
+              );
+            
+            case "image":
+              return (
+                <div key={`${sectionIndex}-${blockIndex}`} className="my-6">
+                  {block.url && (
+                    <div className="relative aspect-video rounded-lg overflow-hidden border border-gray-200">
+                      <Image
+                        src={block.url}
+                        alt={block.caption || 'Notion image'}
+                        fill
+                        className="object-cover"
+                        unoptimized={true}
+                      />
+                    </div>
+                  )}
+                  {block.caption && (
+                    <p className="text-sm text-gray-500 mt-2 text-center italic">
+                      {block.caption}
+                    </p>
+                  )}
+                </div>
+              );
+            
+            case "quote":
+              return (
+                <blockquote key={`${sectionIndex}-${blockIndex}`} className="border-l-4 border-blue-500 pl-4 my-4 italic text-gray-600">
+                  {block.richText ? renderRichText(block.richText) : block.text}
+                </blockquote>
+              );
+            
+            case "callout":
+              return (
+                <div key={`${sectionIndex}-${blockIndex}`} className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-4">
+                  <div className="flex items-start">
+                    <div className="text-blue-600 mr-3">💡</div>
+                    <div className="text-blue-800">
+                      {block.richText ? renderRichText(block.richText) : block.text}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          
-          case "divider":
-            return <hr key={i} className="my-8 border-gray-200" />;
-          
-          case "code":
-            return (
-              <pre key={i} className="bg-gray-100 rounded-lg p-4 my-4 overflow-x-auto">
-                <code className="text-sm text-gray-800">
-                  {block.richText ? renderRichText(block.richText) : block.text}
-                </code>
-              </pre>
-            );
-          
-          default:
-            // Fallback for unknown block types
-            return (
-              <div key={i} className="mb-4 text-gray-700">
-                {block.richText ? renderRichText(block.richText) : block.text || `[${block.type}]`}
-              </div>
-            );
-        }
+              );
+            
+            case "divider":
+              return <hr key={`${sectionIndex}-${blockIndex}`} className="my-8 border-gray-200" />;
+            
+            case "code":
+              return (
+                <pre key={`${sectionIndex}-${blockIndex}`} className="bg-gray-100 rounded-lg p-4 my-4 overflow-x-auto">
+                  <code className="text-sm text-gray-800">
+                    {block.richText ? renderRichText(block.richText) : block.text}
+                  </code>
+                </pre>
+              );
+            
+            default:
+              // Fallback for unknown block types
+              return (
+                <div key={`${sectionIndex}-${blockIndex}`} className="mb-4 text-gray-700">
+                  {block.richText ? renderRichText(block.richText) : block.text || `[${block.type}]`}
+                </div>
+              );
+          }
+        });
       })}
     </div>
   );

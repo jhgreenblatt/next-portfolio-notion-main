@@ -42,6 +42,7 @@ export default async function CasePage({ params }: Params) {
                   width={24} 
                   height={16}
                   className="object-contain"
+                  unoptimized={true}
                 />
               </div>
             )}

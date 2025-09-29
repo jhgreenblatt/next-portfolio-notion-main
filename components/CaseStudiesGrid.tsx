@@ -16,24 +16,19 @@ export default function CaseStudiesGrid({ cases }: Props) {
       variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
       className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
     >
-      {cases.map((c) => (
-        <motion.div 
-          key={c.id} 
-          variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}
-        >
-          <CaseCard 
-            slug={c.slug} 
-            title={c.title} 
-            summary={c.summary} 
-            coverImage={c.coverImage}
-            role={c.role}
-            year={c.year}
-            tags={c.tags}
-            publishedDate={c.publishedDate}
-            articleType={c.articleType}
-          />
-        </motion.div>
-      ))}
+          {cases.map((c) => (
+            <motion.div
+              key={c.id}
+              variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}
+            >
+              <CaseCard
+                slug={c.slug}
+                title={c.title}
+                summary={c.summary}
+                coverImage={c.coverImage}
+              />
+            </motion.div>
+          ))}
     </motion.ul>
   );
 }

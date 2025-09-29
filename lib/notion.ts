@@ -17,6 +17,7 @@ export type CaseStudy = {
   role?: string;
   year?: string;
   companyName?: string;
+  companyLogo?: string;
   tags?: string[];
   articleType?: string;
   status?: string;
@@ -60,6 +61,7 @@ export async function fetchCaseStudies(): Promise<CaseStudy[]> {
       const role = props.role?.rich_text?.[0]?.plain_text || "";
       const year = props.year?.number?.toString() || "";
       const companyName = props["Company Name"]?.rich_text?.[0]?.plain_text || "";
+      const companyLogo = props["Company logo (SVG)"]?.files?.[0]?.file?.url || "";
       
       // New properties
       const tags = props.Tags?.multi_select?.map((tag: any) => tag.name) || [];
@@ -81,6 +83,7 @@ export async function fetchCaseStudies(): Promise<CaseStudy[]> {
         role, 
         year,
         companyName,
+        companyLogo,
         tags,
         articleType,
         status,
@@ -129,6 +132,7 @@ export async function fetchCaseStudyBySlug(slug: string): Promise<CaseStudyDetai
     const role = props.role?.rich_text?.[0]?.plain_text || "";
     const year = props.year?.number?.toString() || "";
     const companyName = props["Company Name"]?.rich_text?.[0]?.plain_text || "";
+    const companyLogo = props["Company logo (SVG)"]?.files?.[0]?.file?.url || "";
     
     // New properties
     const tags = props.Tags?.multi_select?.map((tag: any) => tag.name) || [];
@@ -190,6 +194,7 @@ export async function fetchCaseStudyBySlug(slug: string): Promise<CaseStudyDetai
       role,
       year,
       companyName,
+      companyLogo,
       tags,
       articleType,
       status,

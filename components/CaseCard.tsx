@@ -9,13 +9,15 @@ type Props = {
   title: string;
   summary?: string;
   coverImage?: string;
+  companyName?: string;
 };
 
 export default function CaseCard({
   slug,
   title,
   summary,
-  coverImage
+  coverImage,
+  companyName
 }: Props) {
   return (
     <motion.li
@@ -30,6 +32,9 @@ export default function CaseCard({
           </div>
         ) : null}
             <div className="p-4">
+              {companyName ? (
+                <div className="text-xs text-gray-500 mb-1">{companyName}</div>
+              ) : null}
               <h3 className="font-semibold mb-3">{title}</h3>
               {summary ? <p className="text-sm text-gray-600">{summary}</p> : null}
             </div>

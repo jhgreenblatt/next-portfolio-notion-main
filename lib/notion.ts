@@ -16,6 +16,7 @@ export type CaseStudy = {
   coverImage?: string;
   role?: string;
   year?: string;
+  companyName?: string;
   tags?: string[];
   articleType?: string;
   status?: string;
@@ -58,6 +59,7 @@ export async function fetchCaseStudies(): Promise<CaseStudy[]> {
       const coverImage = props.coverImage?.url || (page as any).cover?.external?.url || (page as any).cover?.file?.url;
       const role = props.role?.rich_text?.[0]?.plain_text || "";
       const year = props.year?.number?.toString() || "";
+      const companyName = props["Company Name"]?.rich_text?.[0]?.plain_text || "";
       
       // New properties
       const tags = props.Tags?.multi_select?.map((tag: any) => tag.name) || [];
@@ -78,6 +80,7 @@ export async function fetchCaseStudies(): Promise<CaseStudy[]> {
         coverImage, 
         role, 
         year,
+        companyName,
         tags,
         articleType,
         status,
@@ -125,6 +128,7 @@ export async function fetchCaseStudyBySlug(slug: string): Promise<CaseStudyDetai
     const coverImage = props.coverImage?.url || (page as any).cover?.external?.url || (page as any).cover?.file?.url;
     const role = props.role?.rich_text?.[0]?.plain_text || "";
     const year = props.year?.number?.toString() || "";
+    const companyName = props["Company Name"]?.rich_text?.[0]?.plain_text || "";
     
     // New properties
     const tags = props.Tags?.multi_select?.map((tag: any) => tag.name) || [];
@@ -185,6 +189,7 @@ export async function fetchCaseStudyBySlug(slug: string): Promise<CaseStudyDetai
       coverImage,
       role,
       year,
+      companyName,
       tags,
       articleType,
       status,

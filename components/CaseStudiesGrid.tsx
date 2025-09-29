@@ -26,6 +26,7 @@ export default function CaseStudiesGrid({ cases }: Props) {
                 title={c.title}
                 summary={c.summary}
                 coverImage={c.coverImage}
+                companyName={c.companyName}
               />
             </motion.div>
           ))}

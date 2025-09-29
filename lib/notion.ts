@@ -7,38 +7,6 @@ const notion = new Client({
 
 // Notion client initialized
 
-// Notion API types
-interface NotionPage {
-  id: string;
-  properties: {
-    title?: {
-      title: Array<{ plain_text: string }>;
-    };
-    slug?: {
-      rich_text: Array<{ plain_text: string }>;
-    };
-    summary?: {
-      rich_text: Array<{ plain_text: string }>;
-    };
-    coverImage?: {
-      url: string;
-    };
-    role?: {
-      rich_text: Array<{ plain_text: string }>;
-    };
-    year?: {
-      number: number;
-    };
-  };
-  cover?: {
-    external?: { url: string };
-    file?: { url: string };
-  };
-  parent?: {
-    database_id: string;
-  };
-}
-
 
 export type CaseStudy = {
   id: string;
@@ -48,6 +16,15 @@ export type CaseStudy = {
   coverImage?: string;
   role?: string;
   year?: string;
+  tags?: string[];
+  articleType?: string;
+  status?: string;
+  publishedDate?: string;
+  sortOrder?: number;
+  externalLink?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  ogImageUrl?: string;
 };
 
 export type CaseStudyDetail = CaseStudy & {
@@ -82,7 +59,36 @@ export async function fetchCaseStudies(): Promise<CaseStudy[]> {
       const coverImage = props.coverImage?.url || (page as any).cover?.external?.url || (page as any).cover?.file?.url;
       const role = props.role?.rich_text?.[0]?.plain_text || "";
       const year = props.year?.number?.toString() || "";
-      return { id: page.id, title, slug, summary, coverImage, role, year } as CaseStudy;
+      
+      // New properties
+      const tags = props.Tags?.multi_select?.map((tag: any) => tag.name) || [];
+      const articleType = props.ArticleType?.select?.name || "";
+      const status = props.Status?.status?.name || "";
+      const publishedDate = props["Published Date"]?.date?.start || "";
+      const sortOrder = props["Sort Order"]?.number || 0;
+      const externalLink = props["External Link"]?.url || "";
+      const seoTitle = props["SEO Title"]?.rich_text?.[0]?.plain_text || "";
+      const seoDescription = props["SEO Description"]?.rich_text?.[0]?.plain_text || "";
+      const ogImageUrl = props["OG Image URL"]?.rich_text?.[0]?.plain_text || "";
+      
+      return { 
+        id: page.id, 
+        title, 
+        slug, 
+        summary, 
+        coverImage, 
+        role, 
+        year,
+        tags,
+        articleType,
+        status,
+        publishedDate,
+        sortOrder,
+        externalLink,
+        seoTitle,
+        seoDescription,
+        ogImageUrl
+      } as CaseStudy;
     });
   } catch (error) {
     console.error("Error fetching case studies:", error);
@@ -108,8 +114,8 @@ export async function fetchCaseStudyBySlug(slug: string): Promise<CaseStudyDetai
     ) || [];
     
     // Find the page with matching slug
-    const page = databasePages.find((page: any) => 
-      page.properties?.slug?.rich_text?.[0]?.plain_text === slug
+    const page = databasePages.find((p: any) => 
+      p.properties?.slug?.rich_text?.[0]?.plain_text === slug
     );
     
     if (!page) return null;
@@ -120,6 +126,17 @@ export async function fetchCaseStudyBySlug(slug: string): Promise<CaseStudyDetai
     const coverImage = props.coverImage?.url || (page as any).cover?.external?.url || (page as any).cover?.file?.url;
     const role = props.role?.rich_text?.[0]?.plain_text || "";
     const year = props.year?.number?.toString() || "";
+    
+    // New properties
+    const tags = props.Tags?.multi_select?.map((tag: any) => tag.name) || [];
+    const articleType = props.ArticleType?.select?.name || "";
+    const status = props.Status?.status?.name || "";
+    const publishedDate = props["Published Date"]?.date?.start || "";
+    const sortOrder = props["Sort Order"]?.number || 0;
+    const externalLink = props["External Link"]?.url || "";
+    const seoTitle = props["SEO Title"]?.rich_text?.[0]?.plain_text || "";
+    const seoDescription = props["SEO Description"]?.rich_text?.[0]?.plain_text || "";
+    const ogImageUrl = props["OG Image URL"]?.rich_text?.[0]?.plain_text || "";
 
     // Fetch the page content blocks
     const blocks: Array<{ type: string; text?: string }> = [];
@@ -139,11 +156,20 @@ export async function fetchCaseStudyBySlug(slug: string): Promise<CaseStudyDetai
     return {
       id: page.id,
       title,
-      slug,
+      slug: slug,
       summary,
       coverImage,
       role,
       year,
+      tags,
+      articleType,
+      status,
+      publishedDate,
+      sortOrder,
+      externalLink,
+      seoTitle,
+      seoDescription,
+      ogImageUrl,
       blocks,
     } as CaseStudyDetail;
   } catch (error) {

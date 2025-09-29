@@ -2,16 +2,7 @@
 
 import { motion } from "framer-motion";
 import CaseCard from "./CaseCard";
-
-type CaseStudy = {
-  id: string;
-  title: string;
-  slug: string;
-  summary?: string;
-  coverImage?: string;
-  role?: string;
-  year?: string;
-};
+import { CaseStudy } from "@/lib/notion";
 
 type Props = {
   cases: CaseStudy[];
@@ -30,7 +21,17 @@ export default function CaseStudiesGrid({ cases }: Props) {
           key={c.id} 
           variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}
         >
-          <CaseCard slug={c.slug} title={c.title} summary={c.summary} coverImage={c.coverImage} />
+          <CaseCard 
+            slug={c.slug} 
+            title={c.title} 
+            summary={c.summary} 
+            coverImage={c.coverImage}
+            role={c.role}
+            year={c.year}
+            tags={c.tags}
+            publishedDate={c.publishedDate}
+            articleType={c.articleType}
+          />
         </motion.div>
       ))}
     </motion.ul>

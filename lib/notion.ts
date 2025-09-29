@@ -137,14 +137,39 @@ export async function fetchCaseStudyBySlug(slug: string): Promise<CaseStudyDetai
     const seoDescription = props["SEO Description"]?.rich_text?.[0]?.plain_text || "";
     const ogImageUrl = props["OG Image URL"]?.rich_text?.[0]?.plain_text || "";
 
-    // Fetch the page content blocks
-    const blocks: Array<{ type: string; text?: string }> = [];
+    // Fetch the page content blocks with full rich text support
+    const blocks: Array<{ 
+      type: string; 
+      text?: string; 
+      richText?: any;
+      url?: string;
+      caption?: string;
+    }> = [];
+    
     try {
       const children = await notion.blocks.children.list({ block_id: page.id });
       for (const child of children.results as any[]) {
         const type = child.type as string;
-        const rich = child[type]?.rich_text?.[0]?.plain_text;
-        blocks.push({ type, text: rich });
+        const blockData = child[type];
+        
+        // Extract rich text with full formatting
+        const richText = blockData?.rich_text || null;
+        const plainText = richText?.map((text: any) => text.plain_text).join('') || '';
+        
+        // Handle different block types
+        const block: any = { 
+          type, 
+          text: plainText,
+          richText: richText 
+        };
+        
+        // Handle images
+        if (type === 'image') {
+          block.url = blockData?.file?.url || blockData?.external?.url;
+          block.caption = blockData?.caption?.[0]?.plain_text;
+        }
+        
+        blocks.push(block);
       }
     } catch (blockError) {
       console.error("Error fetching blocks:", blockError);

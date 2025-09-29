@@ -60,12 +60,37 @@ function renderRichText(richText: NotionBlock['richText']) {
   });
 }
 
+// Helper function to check if a block is a layout trigger
+const isLayoutTrigger = (block: NotionBlock): boolean => {
+  const text = block.text?.toLowerCase() || '';
+  
+  // Check for callout blocks with layout triggers
+  if (block.type === 'callout') {
+    return /layout:\s*[a-z-]+/.test(text);
+  }
+  
+  // Check for heading blocks with layout triggers
+  if (block.type.startsWith('heading')) {
+    return /\[layout:\s*[a-z-]+\]/.test(text);
+  }
+  
+  // Check for paragraph blocks with layout triggers
+  if (block.type === 'paragraph') {
+    return /<!-- layout:\s*[a-z-]+ -->/.test(text);
+  }
+  
+  return false;
+};
+
 export default function NotionRenderer({ blocks }: { blocks: NotionBlock[] }) {
+  // Filter out layout trigger blocks
+  const filteredBlocks = blocks.filter(block => !isLayoutTrigger(block));
+  
   // Group blocks into layout sections
   const layoutSections: NotionBlock[][] = [];
   let currentSection: NotionBlock[] = [];
   
-  blocks.forEach((block, index) => {
+  filteredBlocks.forEach((block, index) => {
     // Start a new section on major headings
     if (block.type.startsWith('heading') && currentSection.length > 0) {
       layoutSections.push([...currentSection]);
@@ -75,7 +100,7 @@ export default function NotionRenderer({ blocks }: { blocks: NotionBlock[] }) {
     }
     
     // Push the last section
-    if (index === blocks.length - 1) {
+    if (index === filteredBlocks.length - 1) {
       layoutSections.push([...currentSection]);
     }
   });

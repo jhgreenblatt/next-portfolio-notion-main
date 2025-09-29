@@ -12,20 +12,19 @@ interface LayoutPattern {
 
 const LAYOUT_PATTERNS: Record<string, LayoutPattern> = {
   // Full-width hero image with overlay text
-  HERO_WITH_OVERLAY: {
+  HERO_OVERLAY: {
     pattern: ['heading_1', 'paragraph', 'image'],
     component: 'HeroOverlay'
   },
   
   // Service blueprint / complex diagram
-  DIAGRAM_FULLWIDTH: {
+  FULLWIDTH_DIAGRAM: {
     pattern: ['heading_2', 'paragraph', 'image'],
-    keywords: ['blueprint', 'diagram', 'process', 'flow'],
     component: 'FullWidthDiagram'
   },
   
   // Two-column content with image
-  TWO_COLUMN_CONTENT: {
+  TWO_COLUMN: {
     pattern: ['heading_2', 'paragraph', 'paragraph', 'image'],
     component: 'TwoColumn'
   },
@@ -39,15 +38,25 @@ const LAYOUT_PATTERNS: Record<string, LayoutPattern> = {
   // KPI cards / metrics display
   METRICS_CARDS: {
     pattern: ['heading_2', 'paragraph', 'image'],
-    keywords: ['kpi', 'metrics', 'results', 'outcome'],
     component: 'MetricsCards'
   },
   
   // Timeline / process steps
   TIMELINE: {
     pattern: ['heading_2', 'paragraph', 'image'],
-    keywords: ['timeline', 'process', 'steps', 'phases'],
     component: 'Timeline'
+  },
+  
+  // Simple centered content
+  CENTERED: {
+    pattern: ['heading_2', 'paragraph'],
+    component: 'Centered'
+  },
+  
+  // Side-by-side comparison
+  COMPARISON: {
+    pattern: ['heading_2', 'paragraph', 'image', 'paragraph', 'image'],
+    component: 'Comparison'
   }
 };
 
@@ -207,21 +216,104 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   );
 };
 
-// Smart layout detection
-const detectLayout = (blocks: NotionBlock[]): string | null => {
-  const blockTexts = blocks.map(block => block.text?.toLowerCase() || '').join(' ');
+const Centered = ({ blocks }: { blocks: NotionBlock[] }) => {
+  const [heading, paragraph] = blocks;
   
-  // Check for specific patterns
-  for (const [layoutName, config] of Object.entries(LAYOUT_PATTERNS)) {
-    const patternMatch = config.pattern.every((expectedType, index) => 
-      blocks[index]?.type === expectedType
-    );
+  return (
+    <div className="my-16 text-center max-w-4xl mx-auto">
+      {heading && (
+        <h2 className="text-3xl font-bold mb-6 text-gray-900">{heading.text}</h2>
+      )}
+      {paragraph && (
+        <p className="text-lg text-gray-700 leading-relaxed">{paragraph.text}</p>
+      )}
+    </div>
+  );
+};
+
+const Comparison = ({ blocks }: { blocks: NotionBlock[] }) => {
+  const [heading, paragraph1, image1, paragraph2, image2] = blocks;
+  
+  return (
+    <div className="my-16">
+      {heading && (
+        <h2 className="text-3xl font-bold mb-8 text-gray-900 text-center">{heading.text}</h2>
+      )}
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="space-y-6">
+          {paragraph1 && (
+            <p className="text-lg text-gray-700 leading-relaxed">{paragraph1.text}</p>
+          )}
+          {image1?.url && (
+            <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-gray-200">
+              <Image
+                src={image1.url}
+                alt={image1.caption || 'Comparison image 1'}
+                fill
+                className="object-cover"
+                unoptimized={true}
+              />
+            </div>
+          )}
+        </div>
+        
+        <div className="space-y-6">
+          {paragraph2 && (
+            <p className="text-lg text-gray-700 leading-relaxed">{paragraph2.text}</p>
+          )}
+          {image2?.url && (
+            <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-gray-200">
+              <Image
+                src={image2.url}
+                alt={image2.caption || 'Comparison image 2'}
+                fill
+                className="object-cover"
+                unoptimized={true}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Layout trigger detection from Notion content
+const detectLayoutTrigger = (blocks: NotionBlock[]): string | null => {
+  // Look for layout triggers in the first few blocks
+  const firstBlocks = blocks.slice(0, 3);
+  
+  for (const block of firstBlocks) {
+    const text = block.text?.toLowerCase() || '';
     
-    const keywordMatch = config.keywords ? 
-      config.keywords.some(keyword => blockTexts.includes(keyword)) : true;
+    // Check for callout blocks with layout triggers
+    if (block.type === 'callout') {
+      // Look for layout:hero-overlay, layout:fullwidth-diagram, etc.
+      const layoutMatch = text.match(/layout:\s*([a-z-]+)/);
+      if (layoutMatch) {
+        const layoutType = layoutMatch[1].replace(/-/g, '_').toUpperCase();
+        return layoutType;
+      }
+    }
     
-    if (patternMatch && keywordMatch) {
-      return layoutName;
+    // Check for special heading patterns
+    if (block.type.startsWith('heading')) {
+      // Look for [LAYOUT:hero-overlay] in heading text
+      const headingMatch = text.match(/\[layout:\s*([a-z-]+)\]/);
+      if (headingMatch) {
+        const layoutType = headingMatch[1].replace(/-/g, '_').toUpperCase();
+        return layoutType;
+      }
+    }
+    
+    // Check for paragraph blocks with layout triggers
+    if (block.type === 'paragraph') {
+      const paragraphMatch = text.match(/<!-- layout:\s*([a-z-]+) -->/);
+      if (paragraphMatch) {
+        const layoutType = paragraphMatch[1].replace(/-/g, '_').toUpperCase();
+        return layoutType;
+      }
     }
   }
   
@@ -230,17 +322,25 @@ const detectLayout = (blocks: NotionBlock[]): string | null => {
 
 // Main Dynamic Layout Component
 export default function DynamicLayout({ blocks }: { blocks: NotionBlock[] }) {
-  const layoutType = detectLayout(blocks);
+  const layoutType = detectLayoutTrigger(blocks);
   
   switch (layoutType) {
-    case 'HERO_WITH_OVERLAY':
+    case 'HERO_OVERLAY':
       return <HeroOverlay blocks={blocks} />;
-    case 'DIAGRAM_FULLWIDTH':
+    case 'FULLWIDTH_DIAGRAM':
       return <FullWidthDiagram blocks={blocks} />;
-    case 'TWO_COLUMN_CONTENT':
+    case 'TWO_COLUMN':
       return <TwoColumn blocks={blocks} />;
     case 'IMAGE_GALLERY':
       return <ImageGallery blocks={blocks} />;
+    case 'METRICS_CARDS':
+      return <FullWidthDiagram blocks={blocks} />; // Reuse diagram layout for metrics
+    case 'TIMELINE':
+      return <FullWidthDiagram blocks={blocks} />; // Reuse diagram layout for timeline
+    case 'CENTERED':
+      return <Centered blocks={blocks} />;
+    case 'COMPARISON':
+      return <Comparison blocks={blocks} />;
     default:
       return null; // Fall back to default NotionRenderer
   }

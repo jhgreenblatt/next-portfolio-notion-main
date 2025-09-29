@@ -37,13 +37,12 @@ export async function fetchCaseStudies(): Promise<CaseStudy[]> {
   if (!databaseId) return [];
 
   try {
-    // Try using the search method instead of databases.query
+    // Search for all pages, then filter by database_id
     const res = await notion.search({
       filter: {
         property: "object",
         value: "page"
-      },
-      query: databaseId
+      }
     });
     
     // Filter results to only include pages from our database
@@ -100,7 +99,7 @@ export async function fetchCaseStudyBySlug(slug: string): Promise<CaseStudyDetai
   if (!databaseId) return null;
 
   try {
-    // Use the same search approach that works for fetchCaseStudies
+    // Search for all pages, then filter by database_id
     const res = await notion.search({
       filter: {
         property: "object",

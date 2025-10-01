@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import BlobImage from "./BlobImage";
 import { NotionBlock } from "./NotionRenderer";
 
 // Layout detection patterns
@@ -76,12 +76,11 @@ const ImageGalleryLayout = ({ blocks }: { blocks: NotionBlock[] }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {images.map((image, index) => (
           <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
-            <Image
+            <BlobImage
               src={image.url!}
               alt={image.caption || `Gallery image ${index + 1}`}
               fill
               className="object-cover"
-              unoptimized={true}
             />
             {image.caption && (
               <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-3">
@@ -120,12 +119,11 @@ const TwoColumnLayout = ({ blocks }: { blocks: NotionBlock[] }) => {
         <div className="space-y-6">
           {images.map((image, index) => (
             <div key={index} className="relative aspect-[4/3] rounded-lg overflow-hidden border border-gray-200">
-              <Image
+              <BlobImage
                 src={image.url!}
                 alt={image.caption || `Image ${index + 1}`}
                 fill
                 className="object-cover"
-                unoptimized={true}
               />
               {image.caption && (
                 <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-3">

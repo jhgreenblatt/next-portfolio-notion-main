@@ -1,6 +1,6 @@
 import React from "react";
-import Image from "next/image";
 import DynamicLayout from "./DynamicLayout";
+import BlobImage from "./BlobImage";
 
 // Comprehensive Notion block types
 export type NotionBlock = {
@@ -165,19 +165,14 @@ export default function NotionRenderer({ blocks }: { blocks: NotionBlock[] }) {
                 <div key={`${sectionIndex}-${blockIndex}`} className="my-6">
                   {block.url && (
                     <div className="relative aspect-video rounded-lg overflow-hidden border border-gray-200">
-                      <Image
+                      <BlobImage
                         src={block.url}
                         alt={block.caption || 'Notion image'}
                         fill
                         className="object-cover"
-                        unoptimized={true}
+                        caption={block.caption}
                       />
                     </div>
-                  )}
-                  {block.caption && (
-                    <p className="text-sm text-gray-500 mt-2 text-center italic">
-                      {block.caption}
-                    </p>
                   )}
                 </div>
               );

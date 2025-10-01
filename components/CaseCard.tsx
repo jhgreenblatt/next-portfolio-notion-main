@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import BlobImage from "./BlobImage";
 
 // Test blob asset rendering - updated case study image
 
@@ -30,7 +30,7 @@ export default function CaseCard({
       <Link href={`/case/${slug}`} className="block">
         {coverImage ? (
           <div className="relative aspect-[16/9]">
-            <Image src={coverImage} alt={title} fill className="object-cover" />
+            <BlobImage src={coverImage} alt={title} fill className="object-cover" />
           </div>
         ) : null}
             <div className="p-4">

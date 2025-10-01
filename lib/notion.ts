@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Client } from "@notionhq/client";
+import { processImageUrl } from "./blob";
 
 const notion = new Client({ 
   auth: process.env.NOTION_API_TOKEN 

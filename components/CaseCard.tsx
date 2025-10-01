@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+// Test blob asset rendering - updated case study image
+
 type Props = {
   slug: string;
   title: string;

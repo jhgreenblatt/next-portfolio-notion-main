@@ -69,12 +69,11 @@ const HeroOverlay = ({ blocks }: { blocks: NotionBlock[] }) => {
       <div className="relative">
         {image?.url && (
           <div className="relative aspect-[21/9] rounded-xl overflow-hidden">
-            <Image
+            <BlobImage
               src={image.url}
               alt={heading?.text || 'Hero image'}
               fill
               className="object-cover"
-              unoptimized={true}
             />
             <div className="absolute inset-0 bg-black/40" />
             
@@ -118,12 +117,11 @@ const FullWidthDiagram = ({ blocks }: { blocks: NotionBlock[] }) => {
       {image?.url && (
         <div className="relative">
           <div className="relative aspect-[21/9] rounded-xl overflow-hidden border border-gray-200 shadow-lg">
-            <Image
+            <BlobImage
               src={image.url}
               alt={heading?.text || 'Diagram'}
               fill
               className="object-contain bg-gray-50"
-              unoptimized={true}
             />
           </div>
           {image.caption && (
@@ -245,12 +243,11 @@ const Comparison = ({ blocks }: { blocks: NotionBlock[] }) => {
           )}
           {image1?.url && (
             <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-gray-200">
-              <Image
+              <BlobImage
                 src={image1.url}
                 alt={image1.caption || 'Comparison image 1'}
                 fill
                 className="object-cover"
-                unoptimized={true}
               />
             </div>
           )}
@@ -262,12 +259,11 @@ const Comparison = ({ blocks }: { blocks: NotionBlock[] }) => {
           )}
           {image2?.url && (
             <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-gray-200">
-              <Image
+              <BlobImage
                 src={image2.url}
                 alt={image2.caption || 'Comparison image 2'}
                 fill
                 className="object-cover"
-                unoptimized={true}
               />
             </div>
           )}

@@ -50,12 +50,11 @@ const HeroImageLayout = ({ blocks }: { blocks: NotionBlock[] }) => {
       
       {image && image.url && (
         <div className="relative aspect-[16/10] rounded-lg overflow-hidden border border-gray-200">
-          <Image
+          <BlobImage
             src={image.url}
             alt={image.caption || 'Case study image'}
             fill
             className="object-cover"
-            unoptimized={true}
           />
           {image.caption && (
             <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-4">

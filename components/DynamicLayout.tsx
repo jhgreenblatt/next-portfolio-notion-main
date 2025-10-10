@@ -1,5 +1,8 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
 import BlobImage from "./BlobImage";
 import { NotionBlock } from "./NotionRenderer";
 
@@ -183,30 +186,143 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   const [heading, ...imageBlocks] = blocks;
   const images = imageBlocks.filter(block => block.type === 'image');
   
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { 
+      loop: true,
+      align: 'center',
+      skipSnaps: false,
+    },
+    [Autoplay({ delay: 4000, stopOnInteraction: true })]
+  );
+  
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
+  
+  const scrollPrev = useCallback(() => {
+    if (emblaApi) emblaApi.scrollPrev();
+  }, [emblaApi]);
+  
+  const scrollNext = useCallback(() => {
+    if (emblaApi) emblaApi.scrollNext();
+  }, [emblaApi]);
+  
+  const scrollTo = useCallback((index: number) => {
+    if (emblaApi) emblaApi.scrollTo(index);
+  }, [emblaApi]);
+  
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+  
+  useEffect(() => {
+    if (!emblaApi) return;
+    
+    setScrollSnaps(emblaApi.scrollSnapList());
+    emblaApi.on('select', onSelect);
+    onSelect();
+    
+    return () => {
+      emblaApi.off('select', onSelect);
+    };
+  }, [emblaApi, onSelect]);
+  
   return (
     <div className="my-16">
       {heading && (
         <h2 className="text-3xl font-bold mb-8 text-gray-900">{heading.text}</h2>
       )}
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {images.map((image, index) => (
-          <div key={index} className="group relative aspect-[4/3] rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-lg transition-shadow">
-            <BlobImage
-              src={image.url!}
-              alt={image.caption || `Gallery image ${index + 1}`}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-            {image.caption && (
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors duration-300 flex items-end">
-                <div className="p-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <p className="text-sm font-medium">{image.caption}</p>
+      <div className="relative">
+        {/* Embla Carousel */}
+        <div className="overflow-hidden rounded-xl" ref={emblaRef}>
+          <div className="flex">
+            {images.map((image, index) => (
+              <div 
+                key={index} 
+                className="flex-[0_0_100%] min-w-0 relative"
+              >
+                <div className="relative aspect-[16/9] md:aspect-[21/9]">
+                  <BlobImage
+                    src={image.url!}
+                    alt={image.caption || `Gallery image ${index + 1}`}
+                    fill
+                    className="object-cover"
+                  />
+                  {image.caption && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+                      <p className="text-white text-lg font-medium">
+                        {image.caption}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
+            ))}
           </div>
-        ))}
+        </div>
+        
+        {/* Navigation Buttons */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={scrollPrev}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/90 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white transition-colors group"
+              aria-label="Previous image"
+            >
+              <svg 
+                className="w-6 h-6 text-gray-800 group-hover:scale-110 transition-transform" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            <button
+              onClick={scrollNext}
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/90 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white transition-colors group"
+              aria-label="Next image"
+            >
+              <svg 
+                className="w-6 h-6 text-gray-800 group-hover:scale-110 transition-transform" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </>
+        )}
+        
+        {/* Dots Navigation */}
+        {images.length > 1 && (
+          <div className="flex justify-center gap-2 mt-6">
+            {scrollSnaps.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => scrollTo(index)}
+                className={`h-2 rounded-full transition-all ${
+                  index === selectedIndex 
+                    ? 'bg-gray-800 w-8' 
+                    : 'bg-gray-300 w-2 hover:bg-gray-400'
+                }`}
+                aria-label={`Go to image ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
+        
+        {/* Image Counter */}
+        {images.length > 1 && (
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-600">
+              {selectedIndex + 1} / {images.length}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

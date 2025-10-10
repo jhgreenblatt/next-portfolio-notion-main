@@ -86,22 +86,28 @@ const isLayoutTrigger = (block: NotionBlock): boolean => {
 const hasLayoutTrigger = (blocks: NotionBlock[]): boolean => {
   const firstBlocks = blocks.slice(0, 3);
   
+  console.log('NotionRenderer: Checking for layout trigger in section:', firstBlocks.map(b => ({ type: b.type, text: b.text })));
+  
   for (const block of firstBlocks) {
     const text = block.text?.toLowerCase() || '';
     
     if (block.type === 'callout' && /layout:\s*[a-z-]+/.test(text)) {
+      console.log('NotionRenderer: Found layout trigger in callout');
       return true;
     }
     
     if (block.type.startsWith('heading') && /\[layout:\s*[a-z-]+\]/.test(text)) {
+      console.log('NotionRenderer: Found layout trigger in heading');
       return true;
     }
     
     if (block.type === 'paragraph' && /<!-- layout:\s*[a-z-]+ -->/.test(text)) {
+      console.log('NotionRenderer: Found layout trigger in paragraph');
       return true;
     }
   }
   
+  console.log('NotionRenderer: No layout trigger found in section');
   return false;
 };
 

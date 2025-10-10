@@ -69,19 +69,25 @@ We iterated on the user flow...
 
 ### `image-gallery`
 **Perfect for**: UI mockups, wireframes, process steps
-**Content**: Heading + Multiple Images
-**Result**: Responsive grid with hover effects
+**Content**: Heading + Multiple Images (with optional captions)
+**Result**: Smooth carousel with navigation arrows and dots
 
 ```
 💡 layout:image-gallery
 
 ## Prioritised User Testing
-[Upload screenshot 1]
-[Upload screenshot 2]
-[Upload screenshot 3]
-[Upload screenshot 4]
-[Upload screenshot 5]
+[Upload image 1 - click image and add caption in Notion]
+[Upload image 2 - click image and add caption in Notion]
+[Upload image 3 - click image and add caption in Notion]
+[Upload image 4 - click image and add caption in Notion]
+[Upload image 5 - click image and add caption in Notion]
 ```
+
+**💡 Pro Tip for Captions**: 
+- Click on any image in Notion
+- You'll see a "Caption" field appear below the image
+- Type your caption there - it will display as an overlay on the carousel
+- Alternatively, add paragraphs between images (they'll be used as captions)
 
 ### `centered`
 **Perfect for**: Simple, focused content

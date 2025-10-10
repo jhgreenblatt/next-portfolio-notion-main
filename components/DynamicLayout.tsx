@@ -201,8 +201,12 @@ const TwoColumn = ({ blocks }: { blocks: NotionBlock[] }) => {
 };
 
 const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
-  const [heading, ...imageBlocks] = blocks;
-  const images = imageBlocks.filter(block => block.type === 'image');
+  // Find the heading (if exists) and filter all images
+  const heading = blocks.find(block => block.type.startsWith('heading'));
+  const images = blocks.filter(block => block.type === 'image');
+  
+  // Also capture any paragraphs that might be used as captions (fallback)
+  const paragraphs = blocks.filter(block => block.type === 'paragraph');
   
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { 
@@ -245,6 +249,14 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
     };
   }, [emblaApi, onSelect]);
   
+  // If no images found, don't render the carousel
+  if (images.length === 0) {
+    console.log('ImageGallery: No images found in blocks', blocks);
+    return null;
+  }
+  
+  console.log('ImageGallery rendering with', images.length, 'images');
+  
   return (
     <div className="my-16">
       {heading && (
@@ -255,28 +267,33 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
         {/* Embla Carousel */}
         <div className="overflow-hidden rounded-xl" ref={emblaRef}>
           <div className="flex">
-            {images.map((image, index) => (
-              <div 
-                key={index} 
-                className="flex-[0_0_100%] min-w-0 relative"
-              >
-                <div className="relative aspect-[16/9] md:aspect-[21/9]">
-                  <BlobImage
-                    src={image.url!}
-                    alt={image.caption || `Gallery image ${index + 1}`}
-                    fill
-                    className="object-cover"
-                  />
-                  {image.caption && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
-                      <p className="text-white text-lg font-medium">
-                        {image.caption}
-                      </p>
-                    </div>
-                  )}
+            {images.map((image, index) => {
+              // Use Notion's native caption, or fallback to corresponding paragraph
+              const caption = image.caption || (paragraphs[index] ? cleanBlockText(paragraphs[index]) : '');
+              
+              return (
+                <div 
+                  key={index} 
+                  className="flex-[0_0_100%] min-w-0 relative"
+                >
+                  <div className="relative aspect-[16/9] md:aspect-[21/9]">
+                    <BlobImage
+                      src={image.url!}
+                      alt={caption || `Gallery image ${index + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                    {caption && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+                        <p className="text-white text-lg font-medium">
+                          {caption}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
         
@@ -412,15 +429,19 @@ const detectLayoutTrigger = (blocks: NotionBlock[]): string | null => {
   // Look for layout triggers in the first few blocks
   const firstBlocks = blocks.slice(0, 3);
   
+  console.log('Detecting layout trigger in blocks:', firstBlocks.map(b => ({ type: b.type, text: b.text })));
+  
   for (const block of firstBlocks) {
     const text = block.text?.toLowerCase() || '';
     
     // Check for callout blocks with layout triggers
     if (block.type === 'callout') {
+      console.log('Found callout block with text:', text);
       // Look for layout:hero-overlay, layout:fullwidth-diagram, etc.
       const layoutMatch = text.match(/layout:\s*([a-z-]+)/);
       if (layoutMatch) {
         const layoutType = layoutMatch[1].replace(/-/g, '_').toUpperCase();
+        console.log('Detected layout type from callout:', layoutType);
         return layoutType;
       }
     }
@@ -431,6 +452,7 @@ const detectLayoutTrigger = (blocks: NotionBlock[]): string | null => {
       const headingMatch = text.match(/\[layout:\s*([a-z-]+)\]/);
       if (headingMatch) {
         const layoutType = headingMatch[1].replace(/-/g, '_').toUpperCase();
+        console.log('Detected layout type from heading:', layoutType);
         return layoutType;
       }
     }
@@ -440,11 +462,13 @@ const detectLayoutTrigger = (blocks: NotionBlock[]): string | null => {
       const paragraphMatch = text.match(/<!-- layout:\s*([a-z-]+) -->/);
       if (paragraphMatch) {
         const layoutType = paragraphMatch[1].replace(/-/g, '_').toUpperCase();
+        console.log('Detected layout type from paragraph:', layoutType);
         return layoutType;
       }
     }
   }
   
+  console.log('No layout trigger detected');
   return null;
 };
 

@@ -82,6 +82,29 @@ const isLayoutTrigger = (block: NotionBlock): boolean => {
   return false;
 };
 
+// Helper function to detect if a section has a layout trigger
+const hasLayoutTrigger = (blocks: NotionBlock[]): boolean => {
+  const firstBlocks = blocks.slice(0, 3);
+  
+  for (const block of firstBlocks) {
+    const text = block.text?.toLowerCase() || '';
+    
+    if (block.type === 'callout' && /layout:\s*[a-z-]+/.test(text)) {
+      return true;
+    }
+    
+    if (block.type.startsWith('heading') && /\[layout:\s*[a-z-]+\]/.test(text)) {
+      return true;
+    }
+    
+    if (block.type === 'paragraph' && /<!-- layout:\s*[a-z-]+ -->/.test(text)) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
 export default function NotionRenderer({ blocks }: { blocks: NotionBlock[] }) {
   // Filter out layout trigger blocks
   const filteredBlocks = blocks.filter(block => !isLayoutTrigger(block));
@@ -108,11 +131,15 @@ export default function NotionRenderer({ blocks }: { blocks: NotionBlock[] }) {
   return (
     <div className="prose prose-gray max-w-none">
       {layoutSections.map((section, sectionIndex) => {
-        // Try dynamic layout first
-        const dynamicLayout = <DynamicLayout blocks={section} />;
+        // Check if this section has a layout trigger in the original blocks
+        const originalSection = blocks.slice(
+          blocks.indexOf(section[0]),
+          blocks.indexOf(section[section.length - 1]) + 1
+        );
         
-        if (dynamicLayout) {
-          return <div key={sectionIndex}>{dynamicLayout}</div>;
+        // Try dynamic layout only if there's a layout trigger
+        if (hasLayoutTrigger(originalSection)) {
+          return <div key={sectionIndex}><DynamicLayout blocks={originalSection} /></div>;
         }
         
         // Fall back to individual block rendering

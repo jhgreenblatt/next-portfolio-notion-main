@@ -208,6 +208,19 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   // Also capture any paragraphs that might be used as captions (fallback)
   const paragraphs = blocks.filter(block => block.type === 'paragraph');
   
+  /* 
+   * 🎨 Embla Carousel Customization Options:
+   * 
+   * loop: true/false - Enable infinite looping
+   * align: 'start' | 'center' | 'end' - How slides align in viewport
+   * skipSnaps: false - Prevent skipping slides when scrolling
+   * duration: 25 - Scroll duration in ms (default: 25)
+   * slidesToScroll: 1 - Number of slides to scroll at once
+   * 
+   * Autoplay({ delay: 4000, stopOnInteraction: true })
+   *   delay: Time in ms between auto-advances
+   *   stopOnInteraction: Stop autoplay when user interacts
+   */
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { 
       loop: true,
@@ -276,12 +289,20 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
                   key={index} 
                   className="flex-[0_0_100%] min-w-0 relative"
                 >
-                  <div className="relative aspect-[16/9] md:aspect-[21/9]">
+                  {/* 
+                    * 🎨 Image Display Options:
+                    * aspect-[16/9] - Container aspect ratio (mobile)
+                    * md:aspect-[21/9] - Container aspect ratio (desktop)
+                    * object-contain - Shows full image with letterboxing (current)
+                    * object-cover - Crops image to fill container
+                    * bg-gray-900 - Background color for letterboxing
+                    */}
+                  <div className="relative aspect-[16/9] md:aspect-[21/9] bg-gray-900">
                     <BlobImage
                       src={image.url!}
                       alt={caption || `Gallery image ${index + 1}`}
                       fill
-                      className="object-cover"
+                      className="object-contain"
                     />
                     {caption && (
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">

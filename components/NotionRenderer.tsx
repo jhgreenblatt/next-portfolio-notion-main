@@ -84,17 +84,25 @@ const isLayoutTrigger = (block: NotionBlock): boolean => {
 
 // Helper function to detect if a section has a layout trigger
 const hasLayoutTrigger = (blocks: NotionBlock[]): boolean => {
+  // Check all blocks in the section for a callout trigger (not just first 3)
+  // But check first 3 blocks for heading/paragraph triggers
   const firstBlocks = blocks.slice(0, 3);
   
-  console.log('NotionRenderer: Checking for layout trigger in section:', firstBlocks.map(b => ({ type: b.type, text: b.text })));
+  console.log('NotionRenderer: Checking for layout trigger in section:', blocks.map(b => b.type).join(', '));
   
-  for (const block of firstBlocks) {
+  // Check entire section for callout triggers
+  for (const block of blocks) {
     const text = block.text?.toLowerCase() || '';
     
     if (block.type === 'callout' && /layout:\s*[a-z-]+/.test(text)) {
-      console.log('NotionRenderer: Found layout trigger in callout');
+      console.log('NotionRenderer: Found layout trigger in callout:', text);
       return true;
     }
+  }
+  
+  // Check first 3 blocks for heading/paragraph triggers
+  for (const block of firstBlocks) {
+    const text = block.text?.toLowerCase() || '';
     
     if (block.type.startsWith('heading') && /\[layout:\s*[a-z-]+\]/.test(text)) {
       console.log('NotionRenderer: Found layout trigger in heading');

@@ -63,6 +63,24 @@ const LAYOUT_PATTERNS: Record<string, LayoutPattern> = {
   }
 };
 
+// Helper function to clean layout trigger text from block text
+const cleanBlockText = (block: NotionBlock): string => {
+  if (!block) return '';
+  const text = block.text || '';
+  
+  // Remove [layout:xxx] from headings
+  if (block.type.startsWith('heading')) {
+    return text.replace(/\[layout:\s*[a-z-]+\]\s*/i, '').trim();
+  }
+  
+  // Remove <!-- layout:xxx --> from paragraphs
+  if (block.type === 'paragraph') {
+    return text.replace(/<!--\s*layout:\s*[a-z-]+\s*-->\s*/i, '').trim();
+  }
+  
+  return text;
+};
+
 // Layout Components
 const HeroOverlay = ({ blocks }: { blocks: NotionBlock[] }) => {
   const [heading, paragraph, image] = blocks;
@@ -74,7 +92,7 @@ const HeroOverlay = ({ blocks }: { blocks: NotionBlock[] }) => {
           <div className="relative aspect-[21/9] rounded-xl overflow-hidden">
             <BlobImage
               src={image.url}
-              alt={heading?.text || 'Hero image'}
+              alt={cleanBlockText(heading) || 'Hero image'}
               fill
               className="object-cover"
             />
@@ -85,12 +103,12 @@ const HeroOverlay = ({ blocks }: { blocks: NotionBlock[] }) => {
               <div className="text-center text-white max-w-4xl px-8">
                 {heading && (
                   <h1 className="text-4xl md:text-6xl font-bold mb-6">
-                    {heading.text}
+                    {cleanBlockText(heading)}
                   </h1>
                 )}
                 {paragraph && (
                   <p className="text-xl md:text-2xl leading-relaxed">
-                    {paragraph.text}
+                    {cleanBlockText(paragraph)}
                   </p>
                 )}
               </div>
@@ -108,12 +126,12 @@ const FullWidthDiagram = ({ blocks }: { blocks: NotionBlock[] }) => {
   return (
     <div className="my-16">
       {heading && (
-        <h2 className="text-3xl font-bold mb-6 text-gray-900">{heading.text}</h2>
+        <h2 className="text-3xl font-bold mb-6 text-gray-900">{cleanBlockText(heading)}</h2>
       )}
       
       {paragraph && (
         <p className="text-lg text-gray-700 mb-8 leading-relaxed max-w-4xl">
-          {paragraph.text}
+          {cleanBlockText(paragraph)}
         </p>
       )}
       
@@ -122,7 +140,7 @@ const FullWidthDiagram = ({ blocks }: { blocks: NotionBlock[] }) => {
           <div className="relative aspect-[21/9] rounded-xl overflow-hidden border border-gray-200 shadow-lg">
             <BlobImage
               src={image.url}
-              alt={heading?.text || 'Diagram'}
+              alt={cleanBlockText(heading) || 'Diagram'}
               fill
               className="object-contain bg-gray-50"
             />
@@ -146,7 +164,7 @@ const TwoColumn = ({ blocks }: { blocks: NotionBlock[] }) => {
   return (
     <div className="my-16">
       {heading && (
-        <h2 className="text-3xl font-bold mb-8 text-gray-900">{heading.text}</h2>
+        <h2 className="text-3xl font-bold mb-8 text-gray-900">{cleanBlockText(heading)}</h2>
       )}
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
@@ -154,7 +172,7 @@ const TwoColumn = ({ blocks }: { blocks: NotionBlock[] }) => {
           {paragraphs.map((paragraph, index) => (
             <div key={index}>
               <p className="text-lg text-gray-700 leading-relaxed">
-                {paragraph.text}
+                {cleanBlockText(paragraph)}
               </p>
             </div>
           ))}
@@ -230,7 +248,7 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   return (
     <div className="my-16">
       {heading && (
-        <h2 className="text-3xl font-bold mb-8 text-gray-900">{heading.text}</h2>
+        <h2 className="text-3xl font-bold mb-8 text-gray-900">{cleanBlockText(heading)}</h2>
       )}
       
       <div className="relative">
@@ -334,10 +352,10 @@ const Centered = ({ blocks }: { blocks: NotionBlock[] }) => {
   return (
     <div className="my-16 text-center max-w-4xl mx-auto">
       {heading && (
-        <h2 className="text-3xl font-bold mb-6 text-gray-900">{heading.text}</h2>
+        <h2 className="text-3xl font-bold mb-6 text-gray-900">{cleanBlockText(heading)}</h2>
       )}
       {paragraph && (
-        <p className="text-lg text-gray-700 leading-relaxed">{paragraph.text}</p>
+        <p className="text-lg text-gray-700 leading-relaxed">{cleanBlockText(paragraph)}</p>
       )}
     </div>
   );
@@ -349,13 +367,13 @@ const Comparison = ({ blocks }: { blocks: NotionBlock[] }) => {
   return (
     <div className="my-16">
       {heading && (
-        <h2 className="text-3xl font-bold mb-8 text-gray-900 text-center">{heading.text}</h2>
+        <h2 className="text-3xl font-bold mb-8 text-gray-900 text-center">{cleanBlockText(heading)}</h2>
       )}
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="space-y-6">
           {paragraph1 && (
-            <p className="text-lg text-gray-700 leading-relaxed">{paragraph1.text}</p>
+            <p className="text-lg text-gray-700 leading-relaxed">{cleanBlockText(paragraph1)}</p>
           )}
           {image1?.url && (
             <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-gray-200">
@@ -371,7 +389,7 @@ const Comparison = ({ blocks }: { blocks: NotionBlock[] }) => {
         
         <div className="space-y-6">
           {paragraph2 && (
-            <p className="text-lg text-gray-700 leading-relaxed">{paragraph2.text}</p>
+            <p className="text-lg text-gray-700 leading-relaxed">{cleanBlockText(paragraph2)}</p>
           )}
           {image2?.url && (
             <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-gray-200">
@@ -430,27 +448,50 @@ const detectLayoutTrigger = (blocks: NotionBlock[]): string | null => {
   return null;
 };
 
+// Helper function to check if a block is a layout trigger
+const isLayoutTriggerBlock = (block: NotionBlock): boolean => {
+  const text = block.text?.toLowerCase() || '';
+  
+  if (block.type === 'callout') {
+    return /layout:\s*[a-z-]+/.test(text);
+  }
+  
+  if (block.type.startsWith('heading')) {
+    // Don't filter out headings - just clean them up
+    return false;
+  }
+  
+  if (block.type === 'paragraph') {
+    return /<!-- layout:\s*[a-z-]+ -->/.test(text);
+  }
+  
+  return false;
+};
+
 // Main Dynamic Layout Component
 export default function DynamicLayout({ blocks }: { blocks: NotionBlock[] }) {
   const layoutType = detectLayoutTrigger(blocks);
   
+  // Filter out the layout trigger blocks before passing to components
+  const contentBlocks = blocks.filter(block => !isLayoutTriggerBlock(block));
+  
   switch (layoutType) {
     case 'HERO_OVERLAY':
-      return <HeroOverlay blocks={blocks} />;
+      return <HeroOverlay blocks={contentBlocks} />;
     case 'FULLWIDTH_DIAGRAM':
-      return <FullWidthDiagram blocks={blocks} />;
+      return <FullWidthDiagram blocks={contentBlocks} />;
     case 'TWO_COLUMN':
-      return <TwoColumn blocks={blocks} />;
+      return <TwoColumn blocks={contentBlocks} />;
     case 'IMAGE_GALLERY':
-      return <ImageGallery blocks={blocks} />;
+      return <ImageGallery blocks={contentBlocks} />;
     case 'METRICS_CARDS':
-      return <FullWidthDiagram blocks={blocks} />; // Reuse diagram layout for metrics
+      return <FullWidthDiagram blocks={contentBlocks} />; // Reuse diagram layout for metrics
     case 'TIMELINE':
-      return <FullWidthDiagram blocks={blocks} />; // Reuse diagram layout for timeline
+      return <FullWidthDiagram blocks={contentBlocks} />; // Reuse diagram layout for timeline
     case 'CENTERED':
-      return <Centered blocks={blocks} />;
+      return <Centered blocks={contentBlocks} />;
     case 'COMPARISON':
-      return <Comparison blocks={blocks} />;
+      return <Comparison blocks={contentBlocks} />;
     default:
       return null; // Fall back to default NotionRenderer
   }

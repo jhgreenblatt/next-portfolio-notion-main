@@ -106,44 +106,37 @@ const hasLayoutTrigger = (blocks: NotionBlock[]): boolean => {
 };
 
 export default function NotionRenderer({ blocks }: { blocks: NotionBlock[] }) {
-  // Filter out layout trigger blocks
-  const filteredBlocks = blocks.filter(block => !isLayoutTrigger(block));
-  
-  // Group blocks into layout sections
-  const layoutSections: NotionBlock[][] = [];
+  // Group blocks into layout sections based on headings
+  const sections: NotionBlock[][] = [];
   let currentSection: NotionBlock[] = [];
   
-  filteredBlocks.forEach((block, index) => {
-    // Start a new section on major headings
-    if (block.type.startsWith('heading') && currentSection.length > 0) {
-      layoutSections.push([...currentSection]);
+  blocks.forEach((block, index) => {
+    // Start a new section on heading_2 or heading_1
+    if ((block.type === 'heading_1' || block.type === 'heading_2') && currentSection.length > 0) {
+      sections.push([...currentSection]);
       currentSection = [block];
     } else {
       currentSection.push(block);
     }
     
     // Push the last section
-    if (index === filteredBlocks.length - 1) {
-      layoutSections.push([...currentSection]);
+    if (index === blocks.length - 1 && currentSection.length > 0) {
+      sections.push([...currentSection]);
     }
   });
   
   return (
     <div className="prose prose-gray max-w-none">
-      {layoutSections.map((section, sectionIndex) => {
-        // Check if this section has a layout trigger in the original blocks
-        const originalSection = blocks.slice(
-          blocks.indexOf(section[0]),
-          blocks.indexOf(section[section.length - 1]) + 1
-        );
-        
-        // Try dynamic layout only if there's a layout trigger
-        if (hasLayoutTrigger(originalSection)) {
-          return <div key={sectionIndex}><DynamicLayout blocks={originalSection} /></div>;
+      {sections.map((section, sectionIndex) => {
+        // Check if this section has a layout trigger
+        if (hasLayoutTrigger(section)) {
+          // Pass the section to DynamicLayout which will filter out the trigger
+          return <div key={sectionIndex}><DynamicLayout blocks={section} /></div>;
         }
         
-        // Fall back to individual block rendering
-        return section.map((block, blockIndex) => {
+        // Fall back to individual block rendering (excluding layout triggers)
+        const filteredSection = section.filter(block => !isLayoutTrigger(block));
+        return filteredSection.map((block, blockIndex) => {
           switch (block.type) {
             case "heading_1":
               return (

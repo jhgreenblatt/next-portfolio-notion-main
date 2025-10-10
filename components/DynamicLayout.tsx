@@ -426,12 +426,13 @@ const Comparison = ({ blocks }: { blocks: NotionBlock[] }) => {
 
 // Layout trigger detection from Notion content
 const detectLayoutTrigger = (blocks: NotionBlock[]): string | null => {
-  // Look for layout triggers in the first few blocks
+  // Check all blocks for callout triggers, first 3 for heading/paragraph triggers
   const firstBlocks = blocks.slice(0, 3);
   
-  console.log('Detecting layout trigger in blocks:', firstBlocks.map(b => ({ type: b.type, text: b.text })));
+  console.log('Detecting layout trigger in blocks:', blocks.map(b => b.type).join(', '));
   
-  for (const block of firstBlocks) {
+  // Check entire section for callout triggers (callouts can be anywhere)
+  for (const block of blocks) {
     const text = block.text?.toLowerCase() || '';
     
     // Check for callout blocks with layout triggers
@@ -445,6 +446,11 @@ const detectLayoutTrigger = (blocks: NotionBlock[]): string | null => {
         return layoutType;
       }
     }
+  }
+  
+  // Check first 3 blocks for heading/paragraph triggers
+  for (const block of firstBlocks) {
+    const text = block.text?.toLowerCase() || '';
     
     // Check for special heading patterns
     if (block.type.startsWith('heading')) {

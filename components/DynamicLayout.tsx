@@ -291,13 +291,12 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
                 >
                   {/* 
                     * 🎨 Image Display Options:
-                    * aspect-[16/9] - Container aspect ratio (mobile)
-                    * md:aspect-[21/9] - Container aspect ratio (desktop)
+                    * aspect-[16/9] - Container aspect ratio (mobile & desktop)
                     * object-contain - Shows full image with letterboxing (current)
                     * object-cover - Crops image to fill container
                     * bg-gray-900 - Background color for letterboxing
                     */}
-                  <div className="relative aspect-[16/9] md:aspect-[21/9] bg-gray-900">
+                  <div className="relative aspect-[16/9] bg-gray-900">
                     <BlobImage
                       src={image.url!}
                       alt={caption || `Gallery image ${index + 1}`}

@@ -117,8 +117,14 @@ export default function NotionRenderer({ blocks }: { blocks: NotionBlock[] }) {
   let currentSection: NotionBlock[] = [];
   
   blocks.forEach((block, index) => {
-    // Start a new section on heading_2 or heading_1
-    if ((block.type === 'heading_1' || block.type === 'heading_2') && currentSection.length > 0) {
+    // Check if the previous block was a layout trigger callout
+    const previousBlock = currentSection[currentSection.length - 1];
+    const previousIsLayoutTrigger = previousBlock && isLayoutTrigger(previousBlock);
+    
+    // Start a new section on heading_2 or heading_1, BUT NOT if the previous block was a layout trigger
+    if ((block.type === 'heading_1' || block.type === 'heading_2') && 
+        currentSection.length > 0 && 
+        !previousIsLayoutTrigger) {
       sections.push([...currentSection]);
       currentSection = [block];
     } else {
@@ -129,6 +135,11 @@ export default function NotionRenderer({ blocks }: { blocks: NotionBlock[] }) {
     if (index === blocks.length - 1 && currentSection.length > 0) {
       sections.push([...currentSection]);
     }
+  });
+  
+  console.log('NotionRenderer: Created', sections.length, 'sections');
+  sections.forEach((section, i) => {
+    console.log(`Section ${i}:`, section.map(b => b.type).join(', '));
   });
   
   return (

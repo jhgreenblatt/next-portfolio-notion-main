@@ -287,7 +287,7 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
               return (
                 <div 
                   key={index} 
-                  className="flex-[0_0_100%] min-w-0 relative"
+                  className="flex-[0_0_100%] min-w-0"
                 >
                   {/* 
                     * 🎨 Image Display Options:
@@ -303,14 +303,29 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
                       fill
                       className="object-contain"
                     />
-                    {caption && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
-                        <p className="text-white text-lg font-medium">
-                          {caption}
-                        </p>
-                      </div>
-                    )}
                   </div>
+                  
+                  {/* 
+                    * 🎨 Caption Display Options (below image):
+                    * text-center - Center aligned (current)
+                    * text-left - Left aligned
+                    * text-gray-300 - Light gray text (current)
+                    * text-white - White text
+                    * text-sm - Small text
+                    * mt-4 - Spacing above caption
+                    * 
+                    * To show caption overlaid on image instead:
+                    * Move this div inside the aspect-[16/9] div above
+                    * Add: className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6"
+                    * Change text color to: text-white
+                    */}
+                  {caption && (
+                    <div className="mt-4 px-4 text-center">
+                      <p className="text-sm text-gray-300 leading-relaxed">
+                        {caption}
+                      </p>
+                    </div>
+                  )}
                 </div>
               );
             })}

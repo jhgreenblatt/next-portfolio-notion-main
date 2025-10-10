@@ -278,7 +278,7 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
       
       <div className="relative">
         {/* Embla Carousel */}
-        <div className="overflow-hidden rounded-xl" ref={emblaRef}>
+        <div className="overflow-hidden rounded-none" ref={emblaRef}>
           <div className="flex">
             {images.map((image, index) => {
               // Use Notion's native caption, or fallback to corresponding paragraph
@@ -294,9 +294,10 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
                     * aspect-[16/9] - Container aspect ratio (mobile & desktop)
                     * object-contain - Shows full image with letterboxing (current)
                     * object-cover - Crops image to fill container
-                    * bg-gray-900 - Background color for letterboxing
+                    * bg-white - Background color for letterboxing (current)
+                    * bg-gray-900 - Dark background option
                     */}
-                  <div className="relative aspect-[16/9] bg-gray-900">
+                  <div className="relative aspect-[16/9] bg-white">
                     <BlobImage
                       src={image.url!}
                       alt={caption || `Gallery image ${index + 1}`}

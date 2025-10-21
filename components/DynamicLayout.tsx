@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import AutoScroll from "embla-carousel-auto-scroll";
 import BlobImage from "./BlobImage";
@@ -220,12 +220,12 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
    *   stopOnInteraction: false - Keep scrolling after drag
    *   stopOnMouseEnter: false - Don't stop on hover
    */
-  const autoScrollPlugin = AutoScroll({ 
+  const autoScrollRef = useRef(AutoScroll({ 
     speed: 2,
     startDelay: 0,
     stopOnInteraction: false,
     stopOnMouseEnter: false,
-  });
+  }));
   
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
@@ -233,29 +233,47 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
       dragFree: true,
       align: 'start',
     },
-    [autoScrollPlugin]
+    [autoScrollRef.current]
   );
   
   const [isPlaying, setIsPlaying] = useState(true);
   
+  // Get autoScroll plugin from emblaApi
+  const getAutoScrollPlugin = useCallback(() => {
+    if (!emblaApi) return null;
+    return emblaApi.plugins()?.autoScroll;
+  }, [emblaApi]);
+  
   // Toggle play/pause - explicit user control
   const togglePlayPause = useCallback(() => {
+    const autoScroll = getAutoScrollPlugin();
+    if (!autoScroll) {
+      console.log('AutoScroll plugin not found');
+      return;
+    }
+    
     if (isPlaying) {
-      autoScrollPlugin.stop();
+      console.log('Stopping auto-scroll');
+      autoScroll.stop();
       setIsPlaying(false);
     } else {
-      autoScrollPlugin.play();
+      console.log('Starting auto-scroll');
+      autoScroll.play();
       setIsPlaying(true);
     }
-  }, [isPlaying, autoScrollPlugin]);
+  }, [isPlaying, getAutoScrollPlugin]);
   
   // Pause on drag - only resume when user clicks play
   useEffect(() => {
     if (!emblaApi) return;
     
     const onPointerDown = () => {
-      autoScrollPlugin.stop();
-      setIsPlaying(false);
+      const autoScroll = getAutoScrollPlugin();
+      if (autoScroll) {
+        console.log('Drag detected - pausing auto-scroll');
+        autoScroll.stop();
+        setIsPlaying(false);
+      }
     };
     
     emblaApi.on('pointerDown', onPointerDown);
@@ -263,7 +281,7 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
     return () => {
       emblaApi.off('pointerDown', onPointerDown);
     };
-  }, [emblaApi, autoScrollPlugin]);
+  }, [emblaApi, getAutoScrollPlugin]);
   
   // If no images found, don't render the carousel
   if (images.length === 0) {

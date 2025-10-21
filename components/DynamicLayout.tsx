@@ -238,17 +238,18 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   
   const [isPlaying, setIsPlaying] = useState(true);
   
-  // Toggle play/pause
+  // Toggle play/pause - explicit user control
   const togglePlayPause = useCallback(() => {
     if (isPlaying) {
       autoScrollPlugin.stop();
+      setIsPlaying(false);
     } else {
       autoScrollPlugin.play();
+      setIsPlaying(true);
     }
-    setIsPlaying(!isPlaying);
   }, [isPlaying, autoScrollPlugin]);
   
-  // Pause on drag
+  // Pause on drag - only resume when user clicks play
   useEffect(() => {
     if (!emblaApi) return;
     

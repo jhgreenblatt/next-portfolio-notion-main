@@ -237,12 +237,49 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   );
   
   const [isPlaying, setIsPlaying] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
   
   // Get autoScroll plugin from emblaApi
   const getAutoScrollPlugin = useCallback(() => {
     if (!emblaApi) return null;
     return emblaApi.plugins()?.autoScroll;
   }, [emblaApi]);
+  
+  // Track which image is most visible (>50% in viewport)
+  useEffect(() => {
+    if (!emblaApi) return;
+    
+    const updateActiveSlide = () => {
+      const slides = emblaApi.slideNodes();
+      const containerRect = emblaApi.containerNode().getBoundingClientRect();
+      const containerWidth = containerRect.width;
+      const containerCenter = containerRect.left + containerWidth / 2;
+      
+      let maxVisibility = 0;
+      let mostVisibleIndex = 0;
+      
+      slides.forEach((slide, index) => {
+        const slideRect = slide.getBoundingClientRect();
+        const slideCenter = slideRect.left + slideRect.width / 2;
+        const distanceFromCenter = Math.abs(containerCenter - slideCenter);
+        const visibility = Math.max(0, 1 - distanceFromCenter / containerWidth);
+        
+        if (visibility > maxVisibility) {
+          maxVisibility = visibility;
+          mostVisibleIndex = index % images.length; // Handle duplicated images
+        }
+      });
+      
+      setActiveIndex(mostVisibleIndex);
+    };
+    
+    emblaApi.on('scroll', updateActiveSlide);
+    updateActiveSlide(); // Initial call
+    
+    return () => {
+      emblaApi.off('scroll', updateActiveSlide);
+    };
+  }, [emblaApi, images.length]);
   
   // Toggle play/pause - explicit user control
   const togglePlayPause = useCallback(() => {
@@ -291,6 +328,11 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   
   console.log('ImageGallery rendering with', images.length, 'images');
   
+  // Extract captions for all images
+  const captions = images.map((image, index) => 
+    image.caption || (paragraphs[index] ? cleanBlockText(paragraphs[index]) : '')
+  );
+  
   return (
     <div className="my-16">
       {heading && (
@@ -302,8 +344,6 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
         <div className="overflow-hidden rounded-none" ref={emblaRef}>
           <div className="flex">
             {images.map((image, index) => {
-              // Use Notion's native caption, or fallback to corresponding paragraph
-              const caption = image.caption || (paragraphs[index] ? cleanBlockText(paragraphs[index]) : '');
               
               return (
                 <div 
@@ -326,27 +366,10 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
                   <div className="h-[450px] flex items-center">
                     <img
                       src={image.url!}
-                      alt={caption || `Gallery image ${index + 1}`}
+                      alt={captions[index] || `Gallery image ${index + 1}`}
                       className="h-full w-auto object-cover"
                     />
                   </div>
-                  
-                  {/* 
-                    * 🎨 Caption Display Options (below image):
-                    * text-center - Center aligned (current)
-                    * text-left - Left aligned
-                    * text-gray-600 - Dark gray text for readability (current)
-                    * text-gray-400 - Lighter gray
-                    * text-sm - Small text
-                    * mt-3 - Spacing above caption
-                    */}
-                  {caption && (
-                    <div className="mt-3 text-center">
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                        {caption}
-                      </p>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -380,9 +403,29 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
           )}
         </button>
         
+        {/* Fixed Caption Area with Fade Transitions */}
+        <div className="relative mt-6 min-h-[60px] flex items-center justify-center">
+          {captions.map((caption, index) => {
+            if (!caption) return null;
+            
+            return (
+              <div
+                key={index}
+                className={`absolute inset-0 flex items-center justify-center text-center transition-opacity duration-500 px-8 ${
+                  index === activeIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                <p className="text-sm text-gray-600 leading-relaxed max-w-2xl">
+                  {caption}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+        
         {/* Drag Instructions */}
         <div className="text-center mt-4">
-          <p className="text-sm text-gray-500">
+          <p className="text-xs text-gray-400">
             {isPlaying ? 'Click and drag to pause and scrub' : 'Drag to scrub • Click ▶ to resume'}
           </p>
         </div>

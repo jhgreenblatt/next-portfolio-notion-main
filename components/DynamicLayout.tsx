@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import Autoplay from "embla-carousel-autoplay";
 import BlobImage from "./BlobImage";
 import { NotionBlock } from "./NotionRenderer";
 
@@ -209,58 +208,62 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   const paragraphs = blocks.filter(block => block.type === 'paragraph');
   
   /* 
-   * 🎨 Embla Carousel Customization Options:
+   * 🎨 Ticker Carousel Configuration:
    * 
-   * loop: true/false - Enable infinite looping
-   * align: 'start' | 'center' | 'end' - How slides align in viewport
-   * skipSnaps: false - Prevent skipping slides when scrolling
-   * duration: 25 - Scroll duration in ms (default: 25)
-   * slidesToScroll: 1 - Number of slides to scroll at once
-   * 
-   * Autoplay({ delay: 4000, stopOnInteraction: true })
-   *   delay: Time in ms between auto-advances
-   *   stopOnInteraction: Stop autoplay when user interacts
+   * loop: true - Infinite looping for continuous ticker
+   * dragFree: true - Allows free scrolling without snapping
+   * containScroll: false - Allows partial slides at edges
+   * speed: 0.5 - Ticker scroll speed (pixels per frame)
    */
-  const [emblaRef, emblaApi] = useEmblaCarousel(
-    { 
-      loop: true,
-      align: 'center',
-      skipSnaps: false,
-    },
-    [Autoplay({ delay: 4000, stopOnInteraction: true })]
-  );
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: true,
+    dragFree: true,
+    containScroll: false,
+  });
   
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const animationRef = useRef<number | undefined>(undefined);
   
-  const scrollPrev = useCallback(() => {
-    if (emblaApi) emblaApi.scrollPrev();
-  }, [emblaApi]);
+  // Continuous ticker animation
+  const animate = useCallback(() => {
+    if (!emblaApi || !isPlaying) return;
+    
+    emblaApi.scrollTo(emblaApi.selectedScrollSnap() + 0.005, false);
+    animationRef.current = requestAnimationFrame(animate);
+  }, [emblaApi, isPlaying]);
   
-  const scrollNext = useCallback(() => {
-    if (emblaApi) emblaApi.scrollNext();
-  }, [emblaApi]);
+  // Toggle play/pause
+  const togglePlayPause = useCallback(() => {
+    setIsPlaying((prev) => !prev);
+  }, []);
   
-  const scrollTo = useCallback((index: number) => {
-    if (emblaApi) emblaApi.scrollTo(index);
-  }, [emblaApi]);
+  // Start/stop animation based on play state
+  useEffect(() => {
+    if (isPlaying && emblaApi) {
+      animationRef.current = requestAnimationFrame(animate);
+    } else if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+    
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isPlaying, emblaApi, animate]);
   
-  const onSelect = useCallback(() => {
-    if (!emblaApi) return;
-    setSelectedIndex(emblaApi.selectedScrollSnap());
-  }, [emblaApi]);
-  
+  // Pause on user interaction
   useEffect(() => {
     if (!emblaApi) return;
     
-    setScrollSnaps(emblaApi.scrollSnapList());
-    emblaApi.on('select', onSelect);
-    onSelect();
+    const onPointerDown = () => setIsPlaying(false);
+    
+    emblaApi.on('pointerDown', onPointerDown);
     
     return () => {
-      emblaApi.off('select', onSelect);
+      emblaApi.off('pointerDown', onPointerDown);
     };
-  }, [emblaApi, onSelect]);
+  }, [emblaApi]);
   
   // If no images found, don't render the carousel
   if (images.length === 0) {
@@ -277,9 +280,9 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
       )}
       
       <div className="relative">
-        {/* Embla Carousel */}
+        {/* Ticker Carousel with spacing */}
         <div className="overflow-hidden rounded-none" ref={emblaRef}>
-          <div className="flex">
+          <div className="flex gap-6">
             {images.map((image, index) => {
               // Use Notion's native caption, or fallback to corresponding paragraph
               const caption = image.caption || (paragraphs[index] ? cleanBlockText(paragraphs[index]) : '');
@@ -287,17 +290,20 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
               return (
                 <div 
                   key={index} 
-                  className="flex-[0_0_100%] min-w-0"
+                  className="flex-[0_0_auto] min-w-0"
                 >
                   {/* 
                     * 🎨 Image Display Options:
-                    * aspect-[16/9] - Container aspect ratio (mobile & desktop)
+                    * w-[600px] - Fixed width for ticker (adjust as needed)
+                    * w-[800px] - Wider option
+                    * w-[400px] - Narrower option
+                    * aspect-[16/9] - Container aspect ratio
                     * object-contain - Shows full image with letterboxing (current)
                     * object-cover - Crops image to fill container
                     * bg-white - Background color for letterboxing (current)
                     * bg-gray-900 - Dark background option
                     */}
-                  <div className="relative aspect-[16/9] bg-white">
+                  <div className="relative w-[700px] aspect-[16/9] bg-white">
                     <BlobImage
                       src={image.url!}
                       alt={caption || `Gallery image ${index + 1}`}
@@ -333,67 +339,39 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
           </div>
         </div>
         
-        {/* Navigation Buttons */}
-        {images.length > 1 && (
-          <>
-            <button
-              onClick={scrollPrev}
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/90 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white transition-colors group"
-              aria-label="Previous image"
+        {/* Play/Pause Button */}
+        <button
+          onClick={togglePlayPause}
+          className="absolute bottom-4 right-4 w-12 h-12 rounded-full bg-white/90 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white transition-colors group"
+          aria-label={isPlaying ? 'Pause ticker' : 'Play ticker'}
+        >
+          {isPlaying ? (
+            // Pause Icon
+            <svg 
+              className="w-6 h-6 text-gray-800" 
+              fill="currentColor" 
+              viewBox="0 0 24 24"
             >
-              <svg 
-                className="w-6 h-6 text-gray-800 group-hover:scale-110 transition-transform" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            
-            <button
-              onClick={scrollNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/90 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white transition-colors group"
-              aria-label="Next image"
+              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+            </svg>
+          ) : (
+            // Play Icon
+            <svg 
+              className="w-6 h-6 text-gray-800" 
+              fill="currentColor" 
+              viewBox="0 0 24 24"
             >
-              <svg 
-                className="w-6 h-6 text-gray-800 group-hover:scale-110 transition-transform" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </>
-        )}
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          )}
+        </button>
         
-        {/* Dots Navigation */}
-        {images.length > 1 && (
-          <div className="flex justify-center gap-2 mt-6">
-            {scrollSnaps.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => scrollTo(index)}
-                className={`h-2 rounded-full transition-all ${
-                  index === selectedIndex 
-                    ? 'bg-gray-800 w-8' 
-                    : 'bg-gray-300 w-2 hover:bg-gray-400'
-                }`}
-                aria-label={`Go to image ${index + 1}`}
-              />
-            ))}
-          </div>
-        )}
-        
-        {/* Image Counter */}
-        {images.length > 1 && (
-          <div className="text-center mt-4">
-            <p className="text-sm text-gray-600">
-              {selectedIndex + 1} / {images.length}
-            </p>
-          </div>
-        )}
+        {/* Drag Instructions */}
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-500">
+            {isPlaying ? 'Click and drag to pause and scrub' : 'Drag to scrub • Click ▶ to resume'}
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -269,6 +269,7 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
         let maxViewportCoverage = 0;
         let mostVisibleIndex = 0;
         
+        console.log('--- Checking all', slides.length, 'slides ---');
         slides.forEach((slide, index) => {
           const slideRect = slide.getBoundingClientRect();
           
@@ -279,17 +280,20 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
           
           // Calculate percentage of VIEWPORT (not slide) covered
           const viewportCoverage = (visibleWidth / viewportWidth) * 100;
+          const normalizedIndex = index % images.length;
+          
+          console.log(`  Slide ${index} (image ${normalizedIndex}): ${Math.round(viewportCoverage)}% viewport`);
           
           if (viewportCoverage > maxViewportCoverage) {
             maxViewportCoverage = viewportCoverage;
-            mostVisibleIndex = index % images.length; // Normalize for original array
+            mostVisibleIndex = normalizedIndex;
           }
         });
         
-        console.log('Most visible slide:', mostVisibleIndex, '- Viewport coverage:', Math.round(maxViewportCoverage) + '%', '- Caption:', captions[mostVisibleIndex]);
+        console.log('✓ Winner: slide index', mostVisibleIndex, '- Coverage:', Math.round(maxViewportCoverage) + '%');
         setActiveIndex(prev => {
           if (prev !== mostVisibleIndex) {
-            console.log('Caption switching from index', prev, 'to', mostVisibleIndex);
+            console.log('🎯 Caption switching from', prev, 'to', mostVisibleIndex);
             return mostVisibleIndex;
           }
           return prev;

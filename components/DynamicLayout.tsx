@@ -262,29 +262,36 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
       rafId = requestAnimationFrame(() => {
         const slides = emblaApi.slideNodes();
         const containerRect = emblaApi.containerNode().getBoundingClientRect();
-        const containerLeft = containerRect.left;
-        const containerRight = containerRect.right;
-        const viewportCenter = (containerLeft + containerRight) / 2;
+        const viewportLeft = containerRect.left;
+        const viewportRight = containerRect.right;
+        const viewportWidth = viewportRight - viewportLeft;
         
-        let closestIndex = 0;
-        let minDistance = Infinity;
+        let maxVisiblePercent = 0;
+        let mostVisibleIndex = 0;
         
         slides.forEach((slide, index) => {
           const slideRect = slide.getBoundingClientRect();
-          const slideCenter = slideRect.left + slideRect.width / 2;
-          const distance = Math.abs(viewportCenter - slideCenter);
+          const slideLeft = slideRect.left;
+          const slideRight = slideRect.right;
+          const slideWidth = slideRect.width;
           
-          if (distance < minDistance) {
-            minDistance = distance;
-            closestIndex = index % images.length; // Normalize for original array
+          // Calculate visible portion of this slide
+          const visibleLeft = Math.max(slideLeft, viewportLeft);
+          const visibleRight = Math.min(slideRight, viewportRight);
+          const visibleWidth = Math.max(0, visibleRight - visibleLeft);
+          const visiblePercent = (visibleWidth / slideWidth) * 100;
+          
+          if (visiblePercent > maxVisiblePercent) {
+            maxVisiblePercent = visiblePercent;
+            mostVisibleIndex = index % images.length; // Normalize for original array
           }
         });
         
-        console.log('Active slide index:', closestIndex, '- Caption:', captions[closestIndex]);
+        console.log('Most visible slide:', mostVisibleIndex, '- Visible:', Math.round(maxVisiblePercent) + '%', '- Caption:', captions[mostVisibleIndex]);
         setActiveIndex(prev => {
-          if (prev !== closestIndex) {
-            console.log('Caption switching from index', prev, 'to', closestIndex);
-            return closestIndex;
+          if (prev !== mostVisibleIndex) {
+            console.log('Caption switching from index', prev, 'to', mostVisibleIndex);
+            return mostVisibleIndex;
           }
           return prev;
         });

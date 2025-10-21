@@ -231,6 +231,7 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
     {
       loop: true,
       dragFree: true,
+      align: 'start',
     },
     [autoScrollPlugin]
   );
@@ -293,26 +294,23 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
               return (
                 <div 
                   key={index} 
-                  className="flex-[0_0_auto] min-w-0"
+                  className="flex-[0_0_auto]"
                 >
                   {/* 
-                    * 🎨 Image Display Options:
-                    * w-[900px] - Wide for large images (current)
-                    * w-[700px] - Medium width
-                    * w-[600px] - Narrower option
-                    * w-full - Full width (no letterboxing)
-                    * aspect-[16/9] - Container aspect ratio
-                    * object-contain - Shows full image with letterboxing
-                    * object-cover - Crops image to fill container
-                    * bg-white - Background color for letterboxing (current)
-                    * bg-gray-900 - Dark background option
+                    * 🎨 Image Display Options (Height-Constrained):
+                    * h-[450px] - Fixed height for all images (current)
+                    * h-[500px] - Taller option
+                    * h-[400px] - Shorter option
+                    * 
+                    * Wide images extend horizontally off-screen (no letterboxing)
+                    * All images maintain same height for visual consistency
+                    * object-cover fills the height, crops to width
                     */}
-                  <div className="relative w-[900px] aspect-[16/9] bg-white">
-                    <BlobImage
+                  <div className="h-[450px] flex items-center">
+                    <img
                       src={image.url!}
                       alt={caption || `Gallery image ${index + 1}`}
-                      fill
-                      className="object-contain"
+                      className="h-full w-auto object-cover"
                     />
                   </div>
                   
@@ -320,19 +318,14 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
                     * 🎨 Caption Display Options (below image):
                     * text-center - Center aligned (current)
                     * text-left - Left aligned
-                    * text-gray-300 - Light gray text (current)
-                    * text-white - White text
+                    * text-gray-600 - Dark gray text for readability (current)
+                    * text-gray-400 - Lighter gray
                     * text-sm - Small text
-                    * mt-4 - Spacing above caption
-                    * 
-                    * To show caption overlaid on image instead:
-                    * Move this div inside the aspect-[16/9] div above
-                    * Add: className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6"
-                    * Change text color to: text-white
+                    * mt-3 - Spacing above caption
                     */}
                   {caption && (
-                    <div className="mt-4 px-4 text-center">
-                      <p className="text-sm text-gray-300 leading-relaxed">
+                    <div className="mt-3 text-center">
+                      <p className="text-sm text-gray-600 leading-relaxed">
                         {caption}
                       </p>
                     </div>

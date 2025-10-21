@@ -239,6 +239,11 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   
+  // Extract captions for all images (before useEffect that uses it)
+  const captions = images.map((image, index) => 
+    image.caption || (paragraphs[index] ? cleanBlockText(paragraphs[index]) : '')
+  );
+  
   // Get autoScroll plugin from emblaApi
   const getAutoScrollPlugin = useCallback(() => {
     if (!emblaApi) return null;
@@ -249,29 +254,43 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   useEffect(() => {
     if (!emblaApi) return;
     
+    let rafId: number | null = null;
+    
     const updateActiveSlide = () => {
-      const slides = emblaApi.slideNodes();
-      const containerRect = emblaApi.containerNode().getBoundingClientRect();
-      const containerLeft = containerRect.left;
-      const containerRight = containerRect.right;
-      const viewportCenter = (containerLeft + containerRight) / 2;
+      if (rafId) return; // Throttle using requestAnimationFrame
       
-      let closestIndex = 0;
-      let minDistance = Infinity;
-      
-      slides.forEach((slide, index) => {
-        const slideRect = slide.getBoundingClientRect();
-        const slideCenter = slideRect.left + slideRect.width / 2;
-        const distance = Math.abs(viewportCenter - slideCenter);
+      rafId = requestAnimationFrame(() => {
+        const slides = emblaApi.slideNodes();
+        const containerRect = emblaApi.containerNode().getBoundingClientRect();
+        const containerLeft = containerRect.left;
+        const containerRight = containerRect.right;
+        const viewportCenter = (containerLeft + containerRight) / 2;
         
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestIndex = index % images.length; // Normalize for original array
-        }
+        let closestIndex = 0;
+        let minDistance = Infinity;
+        
+        slides.forEach((slide, index) => {
+          const slideRect = slide.getBoundingClientRect();
+          const slideCenter = slideRect.left + slideRect.width / 2;
+          const distance = Math.abs(viewportCenter - slideCenter);
+          
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestIndex = index % images.length; // Normalize for original array
+          }
+        });
+        
+        console.log('Active slide index:', closestIndex, '- Caption:', captions[closestIndex]);
+        setActiveIndex(prev => {
+          if (prev !== closestIndex) {
+            console.log('Caption switching from index', prev, 'to', closestIndex);
+            return closestIndex;
+          }
+          return prev;
+        });
+        
+        rafId = null;
       });
-      
-      console.log('Active slide index:', closestIndex);
-      setActiveIndex(closestIndex);
     };
     
     emblaApi.on('scroll', updateActiveSlide);
@@ -281,8 +300,9 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
     return () => {
       emblaApi.off('scroll', updateActiveSlide);
       emblaApi.off('init', updateActiveSlide);
+      if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [emblaApi, images.length]);
+  }, [emblaApi, images.length, captions]);
   
   // Toggle play/pause - explicit user control
   const togglePlayPause = useCallback(() => {
@@ -330,12 +350,7 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   }
   
   console.log('ImageGallery rendering with', images.length, 'images');
-  
-  // Extract captions for all images
-  const captions = images.map((image, index) => 
-    image.caption || (paragraphs[index] ? cleanBlockText(paragraphs[index]) : '')
-  );
-  
+
   return (
     <div className="my-16">
       {heading && (

@@ -254,52 +254,49 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   useEffect(() => {
     if (!emblaApi) return;
     
-    let rafId: number | null = null;
+    let updateCounter = 0;
     
     const updateActiveSlide = () => {
-      if (rafId) return; // Throttle using requestAnimationFrame
+      updateCounter++;
+      console.log(`[Update #${updateCounter}] Scroll event triggered`);
       
-      rafId = requestAnimationFrame(() => {
-        const slides = emblaApi.slideNodes();
-        const containerRect = emblaApi.containerNode().getBoundingClientRect();
-        const viewportLeft = containerRect.left;
-        const viewportRight = containerRect.right;
-        const viewportWidth = viewportRight - viewportLeft;
+      const slides = emblaApi.slideNodes();
+      const containerRect = emblaApi.containerNode().getBoundingClientRect();
+      const viewportLeft = containerRect.left;
+      const viewportRight = containerRect.right;
+      const viewportWidth = viewportRight - viewportLeft;
+      
+      let maxViewportCoverage = 0;
+      let mostVisibleIndex = 0;
+      
+      console.log('--- Checking all', slides.length, 'slides ---');
+      slides.forEach((slide, index) => {
+        const slideRect = slide.getBoundingClientRect();
         
-        let maxViewportCoverage = 0;
-        let mostVisibleIndex = 0;
+        // Calculate how much of the viewport this slide occupies
+        const visibleLeft = Math.max(slideRect.left, viewportLeft);
+        const visibleRight = Math.min(slideRect.right, viewportRight);
+        const visibleWidth = Math.max(0, visibleRight - visibleLeft);
         
-        console.log('--- Checking all', slides.length, 'slides ---');
-        slides.forEach((slide, index) => {
-          const slideRect = slide.getBoundingClientRect();
-          
-          // Calculate how much of the viewport this slide occupies
-          const visibleLeft = Math.max(slideRect.left, viewportLeft);
-          const visibleRight = Math.min(slideRect.right, viewportRight);
-          const visibleWidth = Math.max(0, visibleRight - visibleLeft);
-          
-          // Calculate percentage of VIEWPORT (not slide) covered
-          const viewportCoverage = (visibleWidth / viewportWidth) * 100;
-          const normalizedIndex = index % images.length;
-          
-          console.log(`  Slide ${index} (image ${normalizedIndex}): ${Math.round(viewportCoverage)}% viewport`);
-          
-          if (viewportCoverage > maxViewportCoverage) {
-            maxViewportCoverage = viewportCoverage;
-            mostVisibleIndex = normalizedIndex;
-          }
-        });
+        // Calculate percentage of VIEWPORT (not slide) covered
+        const viewportCoverage = (visibleWidth / viewportWidth) * 100;
+        const normalizedIndex = index % images.length;
         
-        console.log('✓ Winner: slide index', mostVisibleIndex, '- Coverage:', Math.round(maxViewportCoverage) + '%');
-        setActiveIndex(prev => {
-          if (prev !== mostVisibleIndex) {
-            console.log('🎯 Caption switching from', prev, 'to', mostVisibleIndex);
-            return mostVisibleIndex;
-          }
-          return prev;
-        });
+        console.log(`  Slide ${index} (image ${normalizedIndex}): left=${Math.round(slideRect.left)}, right=${Math.round(slideRect.right)}, coverage=${Math.round(viewportCoverage)}%`);
         
-        rafId = null;
+        if (viewportCoverage > maxViewportCoverage) {
+          maxViewportCoverage = viewportCoverage;
+          mostVisibleIndex = normalizedIndex;
+        }
+      });
+      
+      console.log('✓ Winner: slide index', mostVisibleIndex, '- Coverage:', Math.round(maxViewportCoverage) + '%');
+      setActiveIndex(prev => {
+        if (prev !== mostVisibleIndex) {
+          console.log('🎯 Caption switching from', prev, 'to', mostVisibleIndex);
+          return mostVisibleIndex;
+        }
+        return prev;
       });
     };
     
@@ -310,7 +307,6 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
     return () => {
       emblaApi.off('scroll', updateActiveSlide);
       emblaApi.off('init', updateActiveSlide);
-      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [emblaApi, images.length, captions]);
   

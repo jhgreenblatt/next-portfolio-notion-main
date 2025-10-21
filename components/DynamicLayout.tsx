@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
+import AutoScroll from "embla-carousel-auto-scroll";
 import BlobImage from "./BlobImage";
 import { NotionBlock } from "./NotionRenderer";
 
@@ -212,58 +213,55 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
    * 
    * loop: true - Infinite looping for continuous ticker
    * dragFree: true - Allows free scrolling without snapping
-   * containScroll: false - Allows partial slides at edges
-   * speed: 0.5 - Ticker scroll speed (pixels per frame)
+   * 
+   * AutoScroll Plugin:
+   *   speed: 1 - Scroll speed (1 = slow, 3 = fast)
+   *   startDelay: 0 - Start immediately
+   *   stopOnInteraction: false - Keep scrolling after drag
+   *   stopOnMouseEnter: false - Don't stop on hover
    */
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: true,
-    dragFree: true,
-    containScroll: false,
+  const autoScrollPlugin = AutoScroll({ 
+    speed: 1,
+    startDelay: 0,
+    stopOnInteraction: false,
+    stopOnMouseEnter: false,
   });
   
-  const [isPlaying, setIsPlaying] = useState(true);
-  const animationRef = useRef<number | undefined>(undefined);
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    {
+      loop: true,
+      dragFree: true,
+    },
+    [autoScrollPlugin]
+  );
   
-  // Continuous ticker animation
-  const animate = useCallback(() => {
-    if (!emblaApi || !isPlaying) return;
-    
-    emblaApi.scrollTo(emblaApi.selectedScrollSnap() + 0.005, false);
-    animationRef.current = requestAnimationFrame(animate);
-  }, [emblaApi, isPlaying]);
+  const [isPlaying, setIsPlaying] = useState(true);
   
   // Toggle play/pause
   const togglePlayPause = useCallback(() => {
-    setIsPlaying((prev) => !prev);
-  }, []);
-  
-  // Start/stop animation based on play state
-  useEffect(() => {
-    if (isPlaying && emblaApi) {
-      animationRef.current = requestAnimationFrame(animate);
-    } else if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
+    const autoScroll = autoScrollPlugin;
+    if (!autoScroll) return;
     
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [isPlaying, emblaApi, animate]);
+    const playOrStop = isPlaying ? autoScroll.stop : autoScroll.play;
+    playOrStop();
+    setIsPlaying(!isPlaying);
+  }, [isPlaying, autoScrollPlugin]);
   
-  // Pause on user interaction
+  // Pause on drag
   useEffect(() => {
     if (!emblaApi) return;
     
-    const onPointerDown = () => setIsPlaying(false);
+    const onPointerDown = () => {
+      autoScrollPlugin.stop();
+      setIsPlaying(false);
+    };
     
     emblaApi.on('pointerDown', onPointerDown);
     
     return () => {
       emblaApi.off('pointerDown', onPointerDown);
     };
-  }, [emblaApi]);
+  }, [emblaApi, autoScrollPlugin]);
   
   // If no images found, don't render the carousel
   if (images.length === 0) {
@@ -272,6 +270,9 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   }
   
   console.log('ImageGallery rendering with', images.length, 'images');
+  
+  // Duplicate images for seamless infinite loop
+  const allImages = [...images, ...images];
   
   return (
     <div className="my-16">
@@ -283,9 +284,11 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
         {/* Ticker Carousel with spacing */}
         <div className="overflow-hidden rounded-none" ref={emblaRef}>
           <div className="flex gap-6">
-            {images.map((image, index) => {
+            {allImages.map((image, index) => {
               // Use Notion's native caption, or fallback to corresponding paragraph
-              const caption = image.caption || (paragraphs[index] ? cleanBlockText(paragraphs[index]) : '');
+              // For duplicated images, use modulo to get correct paragraph index
+              const originalIndex = index % images.length;
+              const caption = image.caption || (paragraphs[originalIndex] ? cleanBlockText(paragraphs[originalIndex]) : '');
               
               return (
                 <div 
@@ -294,16 +297,17 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
                 >
                   {/* 
                     * 🎨 Image Display Options:
-                    * w-[600px] - Fixed width for ticker (adjust as needed)
-                    * w-[800px] - Wider option
-                    * w-[400px] - Narrower option
+                    * w-[900px] - Wide for large images (current)
+                    * w-[700px] - Medium width
+                    * w-[600px] - Narrower option
+                    * w-full - Full width (no letterboxing)
                     * aspect-[16/9] - Container aspect ratio
-                    * object-contain - Shows full image with letterboxing (current)
+                    * object-contain - Shows full image with letterboxing
                     * object-cover - Crops image to fill container
                     * bg-white - Background color for letterboxing (current)
                     * bg-gray-900 - Dark background option
                     */}
-                  <div className="relative w-[700px] aspect-[16/9] bg-white">
+                  <div className="relative w-[900px] aspect-[16/9] bg-white">
                     <BlobImage
                       src={image.url!}
                       alt={caption || `Gallery image ${index + 1}`}

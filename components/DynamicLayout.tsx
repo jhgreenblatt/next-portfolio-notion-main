@@ -245,39 +245,42 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
     return emblaApi.plugins()?.autoScroll;
   }, [emblaApi]);
   
-  // Track which image is most visible (>50% in viewport)
+  // Track which image is most visible in viewport
   useEffect(() => {
     if (!emblaApi) return;
     
     const updateActiveSlide = () => {
       const slides = emblaApi.slideNodes();
       const containerRect = emblaApi.containerNode().getBoundingClientRect();
-      const containerWidth = containerRect.width;
-      const containerCenter = containerRect.left + containerWidth / 2;
+      const containerLeft = containerRect.left;
+      const containerRight = containerRect.right;
+      const viewportCenter = (containerLeft + containerRight) / 2;
       
-      let maxVisibility = 0;
-      let mostVisibleIndex = 0;
+      let closestIndex = 0;
+      let minDistance = Infinity;
       
       slides.forEach((slide, index) => {
         const slideRect = slide.getBoundingClientRect();
         const slideCenter = slideRect.left + slideRect.width / 2;
-        const distanceFromCenter = Math.abs(containerCenter - slideCenter);
-        const visibility = Math.max(0, 1 - distanceFromCenter / containerWidth);
+        const distance = Math.abs(viewportCenter - slideCenter);
         
-        if (visibility > maxVisibility) {
-          maxVisibility = visibility;
-          mostVisibleIndex = index % images.length; // Handle duplicated images
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestIndex = index % images.length; // Normalize for original array
         }
       });
       
-      setActiveIndex(mostVisibleIndex);
+      console.log('Active slide index:', closestIndex);
+      setActiveIndex(closestIndex);
     };
     
     emblaApi.on('scroll', updateActiveSlide);
+    emblaApi.on('init', updateActiveSlide);
     updateActiveSlide(); // Initial call
     
     return () => {
       emblaApi.off('scroll', updateActiveSlide);
+      emblaApi.off('init', updateActiveSlide);
     };
   }, [emblaApi, images.length]);
   

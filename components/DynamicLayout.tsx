@@ -215,13 +215,13 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
    * dragFree: true - Allows free scrolling without snapping
    * 
    * AutoScroll Plugin:
-   *   speed: 1 - Scroll speed (1 = slow, 3 = fast)
+   *   speed: 2 - Scroll speed (1 = slow, 2 = moderate, 3 = fast) [current]
    *   startDelay: 0 - Start immediately
    *   stopOnInteraction: false - Keep scrolling after drag
    *   stopOnMouseEnter: false - Don't stop on hover
    */
   const autoScrollPlugin = AutoScroll({ 
-    speed: 1,
+    speed: 2,
     startDelay: 0,
     stopOnInteraction: false,
     stopOnMouseEnter: false,
@@ -240,11 +240,11 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   
   // Toggle play/pause
   const togglePlayPause = useCallback(() => {
-    const autoScroll = autoScrollPlugin;
-    if (!autoScroll) return;
-    
-    const playOrStop = isPlaying ? autoScroll.stop : autoScroll.play;
-    playOrStop();
+    if (isPlaying) {
+      autoScrollPlugin.stop();
+    } else {
+      autoScrollPlugin.play();
+    }
     setIsPlaying(!isPlaying);
   }, [isPlaying, autoScrollPlugin]);
   
@@ -272,9 +272,6 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   
   console.log('ImageGallery rendering with', images.length, 'images');
   
-  // Duplicate images for seamless infinite loop
-  const allImages = [...images, ...images];
-  
   return (
     <div className="my-16">
       {heading && (
@@ -284,27 +281,28 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
       <div className="relative">
         {/* Ticker Carousel with spacing */}
         <div className="overflow-hidden rounded-none" ref={emblaRef}>
-          <div className="flex gap-6">
-            {allImages.map((image, index) => {
+          <div className="flex">
+            {images.map((image, index) => {
               // Use Notion's native caption, or fallback to corresponding paragraph
-              // For duplicated images, use modulo to get correct paragraph index
-              const originalIndex = index % images.length;
-              const caption = image.caption || (paragraphs[originalIndex] ? cleanBlockText(paragraphs[originalIndex]) : '');
+              const caption = image.caption || (paragraphs[index] ? cleanBlockText(paragraphs[index]) : '');
               
               return (
                 <div 
                   key={index} 
-                  className="flex-[0_0_auto]"
+                  className="flex-[0_0_auto] mr-6"
                 >
                   {/* 
-                    * 🎨 Image Display Options (Height-Constrained):
+                    * 🎨 Image Display & Spacing Options:
+                    * mr-6 - Right margin (24px gap between images, including loop) [current]
+                    * mr-8 - Larger gap (32px)
+                    * mr-4 - Smaller gap (16px)
+                    * 
                     * h-[450px] - Fixed height for all images (current)
                     * h-[500px] - Taller option
                     * h-[400px] - Shorter option
                     * 
-                    * Wide images extend horizontally off-screen (no letterboxing)
-                    * All images maintain same height for visual consistency
-                    * object-cover fills the height, crops to width
+                    * Wide images extend horizontally (no letterboxing)
+                    * All images maintain same height for consistency
                     */}
                   <div className="h-[450px] flex items-center">
                     <img

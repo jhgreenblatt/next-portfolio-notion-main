@@ -266,28 +266,27 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
         const viewportRight = containerRect.right;
         const viewportWidth = viewportRight - viewportLeft;
         
-        let maxVisiblePercent = 0;
+        let maxViewportCoverage = 0;
         let mostVisibleIndex = 0;
         
         slides.forEach((slide, index) => {
           const slideRect = slide.getBoundingClientRect();
-          const slideLeft = slideRect.left;
-          const slideRight = slideRect.right;
-          const slideWidth = slideRect.width;
           
-          // Calculate visible portion of this slide
-          const visibleLeft = Math.max(slideLeft, viewportLeft);
-          const visibleRight = Math.min(slideRight, viewportRight);
+          // Calculate how much of the viewport this slide occupies
+          const visibleLeft = Math.max(slideRect.left, viewportLeft);
+          const visibleRight = Math.min(slideRect.right, viewportRight);
           const visibleWidth = Math.max(0, visibleRight - visibleLeft);
-          const visiblePercent = (visibleWidth / slideWidth) * 100;
           
-          if (visiblePercent > maxVisiblePercent) {
-            maxVisiblePercent = visiblePercent;
+          // Calculate percentage of VIEWPORT (not slide) covered
+          const viewportCoverage = (visibleWidth / viewportWidth) * 100;
+          
+          if (viewportCoverage > maxViewportCoverage) {
+            maxViewportCoverage = viewportCoverage;
             mostVisibleIndex = index % images.length; // Normalize for original array
           }
         });
         
-        console.log('Most visible slide:', mostVisibleIndex, '- Visible:', Math.round(maxVisiblePercent) + '%', '- Caption:', captions[mostVisibleIndex]);
+        console.log('Most visible slide:', mostVisibleIndex, '- Viewport coverage:', Math.round(maxViewportCoverage) + '%', '- Caption:', captions[mostVisibleIndex]);
         setActiveIndex(prev => {
           if (prev !== mostVisibleIndex) {
             console.log('Caption switching from index', prev, 'to', mostVisibleIndex);

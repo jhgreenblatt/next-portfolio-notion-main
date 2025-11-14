@@ -277,22 +277,26 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
       
       <div className="relative">
         {/* Carousel */}
-        <div className="overflow-hidden rounded-xl bg-gray-50" ref={emblaRef}>
-          <div className="flex">
+        <div className="overflow-visible rounded-xl bg-transparent" ref={emblaRef}>
+          <div className="flex items-center">
             {images.map((image, index) => (
               <div 
                 key={index} 
-                className="flex-[0_0_80%] min-w-0 px-4 md:flex-[0_0_60%]"
+                className={`px-2 transition-[flex-basis] duration-500 ease-out ${
+                  selectedIndex === index
+                    ? 'basis-[93%] md:basis-[75%]'
+                    : 'basis-[7%] md:basis-[7%]'
+                }`}
               >
                 <div
-                  className={`relative aspect-[4/3] overflow-hidden rounded-lg border border-gray-200 bg-white transition-all duration-700 ease-out ${
-                    selectedIndex === index ? 'scale-100 opacity-100 shadow-xl' : 'scale-95 opacity-70'
+                  className={`relative aspect-[16/9] overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all duration-700 ease-out ${
+                    selectedIndex === index ? 'scale-100 opacity-100 shadow-2xl' : 'scale-75 opacity-30'
                   }`}
                 >
                   <img
                     src={image.url!}
                     alt={captions[index] || `Gallery image ${index + 1}`}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain bg-gray-50"
                   />
                 </div>
               </div>

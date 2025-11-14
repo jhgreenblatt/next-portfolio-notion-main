@@ -221,7 +221,7 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
    *   stopOnMouseEnter: false - Don't stop on hover
    */
   const autoScrollRef = useRef(AutoScroll({ 
-    speed: 2,
+    speed: 1,
     startDelay: 0,
     stopOnInteraction: false,
     stopOnMouseEnter: false,

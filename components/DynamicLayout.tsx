@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import AutoScroll from "embla-carousel-auto-scroll";
 import BlobImage from "./BlobImage";
 import { NotionBlock } from "./NotionRenderer";
 
@@ -208,146 +207,59 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   // Also capture any paragraphs that might be used as captions (fallback)
   const paragraphs = blocks.filter(block => block.type === 'paragraph');
   
-  /* 
-   * 🎨 Ticker Carousel Configuration:
-   * 
-   * loop: true - Infinite looping for continuous ticker
-   * dragFree: true - Allows free scrolling without snapping
-   * 
-   * AutoScroll Plugin:
-   *   speed: 2 - Scroll speed (1 = slow, 2 = moderate, 3 = fast) [current]
-   *   startDelay: 0 - Start immediately
-   *   stopOnInteraction: false - Keep scrolling after drag
-   *   stopOnMouseEnter: false - Don't stop on hover
-   */
-  const autoScrollRef = useRef(AutoScroll({ 
-    speed: 1,
-    startDelay: 0,
-    stopOnInteraction: false,
-    stopOnMouseEnter: false,
-  }));
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: true,
+    align: 'center',
+    duration: 20,
+  });
   
-  const [emblaRef, emblaApi] = useEmblaCarousel(
-    {
-      loop: true,
-      dragFree: true,
-      align: 'start',
-    },
-    [autoScrollRef.current]
-  );
-  
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
   
   // Extract captions for all images (before useEffect that uses it)
   const captions = images.map((image, index) => 
     image.caption || (paragraphs[index] ? cleanBlockText(paragraphs[index]) : '')
   );
   
-  // Get autoScroll plugin from emblaApi
-  const getAutoScrollPlugin = useCallback(() => {
-    if (!emblaApi) return null;
-    return emblaApi.plugins()?.autoScroll;
+  const scrollPrev = useCallback(() => {
+    if (!emblaApi) return;
+    emblaApi.scrollPrev();
   }, [emblaApi]);
   
-  // Track which image is most visible in viewport
+  const scrollNext = useCallback(() => {
+    if (!emblaApi) return;
+    emblaApi.scrollNext();
+  }, [emblaApi]);
+  
+  const scrollTo = useCallback(
+    (index: number) => {
+      if (!emblaApi) return;
+      emblaApi.scrollTo(index);
+    },
+    [emblaApi]
+  );
+  
   useEffect(() => {
     if (!emblaApi) return;
     
-    let updateCounter = 0;
-    
-    const updateActiveSlide = () => {
-      updateCounter++;
-      console.log(`[Update #${updateCounter}] Scroll event triggered`);
-      
-      const slides = emblaApi.slideNodes();
-      const containerRect = emblaApi.containerNode().getBoundingClientRect();
-      const viewportLeft = containerRect.left;
-      const viewportRight = containerRect.right;
-      const viewportWidth = viewportRight - viewportLeft;
-      
-      let maxViewportCoverage = 0;
-      let mostVisibleIndex = 0;
-      
-      console.log('--- Checking all', slides.length, 'slides ---');
-      slides.forEach((slide, index) => {
-        const slideRect = slide.getBoundingClientRect();
-        
-        // Calculate how much of the viewport this slide occupies
-        const visibleLeft = Math.max(slideRect.left, viewportLeft);
-        const visibleRight = Math.min(slideRect.right, viewportRight);
-        const visibleWidth = Math.max(0, visibleRight - visibleLeft);
-        
-        // Calculate percentage of VIEWPORT (not slide) covered
-        const viewportCoverage = (visibleWidth / viewportWidth) * 100;
-        const normalizedIndex = index % images.length;
-        
-        console.log(`  Slide ${index} (image ${normalizedIndex}): left=${Math.round(slideRect.left)}, right=${Math.round(slideRect.right)}, coverage=${Math.round(viewportCoverage)}%`);
-        
-        if (viewportCoverage > maxViewportCoverage) {
-          maxViewportCoverage = viewportCoverage;
-          mostVisibleIndex = normalizedIndex;
-        }
-      });
-      
-      console.log('✓ Winner: slide index', mostVisibleIndex, '- Coverage:', Math.round(maxViewportCoverage) + '%');
-      setActiveIndex(prev => {
-        if (prev !== mostVisibleIndex) {
-          console.log('🎯 Caption switching from', prev, 'to', mostVisibleIndex);
-          return mostVisibleIndex;
-        }
-        return prev;
-      });
+    const handleSelect = () => {
+      setSelectedIndex(emblaApi.selectedScrollSnap());
     };
     
-    emblaApi.on('scroll', updateActiveSlide);
-    emblaApi.on('init', updateActiveSlide);
-    updateActiveSlide(); // Initial call
+    const handleReInit = () => {
+      setScrollSnaps(emblaApi.scrollSnapList());
+      handleSelect();
+    };
+    
+    handleReInit();
+    emblaApi.on('select', handleSelect);
+    emblaApi.on('reInit', handleReInit);
     
     return () => {
-      emblaApi.off('scroll', updateActiveSlide);
-      emblaApi.off('init', updateActiveSlide);
+      emblaApi.off('select', handleSelect);
+      emblaApi.off('reInit', handleReInit);
     };
-  }, [emblaApi, images.length, captions]);
-  
-  // Toggle play/pause - explicit user control
-  const togglePlayPause = useCallback(() => {
-    const autoScroll = getAutoScrollPlugin();
-    if (!autoScroll) {
-      console.log('AutoScroll plugin not found');
-      return;
-    }
-    
-    if (isPlaying) {
-      console.log('Stopping auto-scroll');
-      autoScroll.stop();
-      setIsPlaying(false);
-    } else {
-      console.log('Starting auto-scroll');
-      autoScroll.play();
-      setIsPlaying(true);
-    }
-  }, [isPlaying, getAutoScrollPlugin]);
-  
-  // Pause on drag - only resume when user clicks play
-  useEffect(() => {
-    if (!emblaApi) return;
-    
-    const onPointerDown = () => {
-      const autoScroll = getAutoScrollPlugin();
-      if (autoScroll) {
-        console.log('Drag detected - pausing auto-scroll');
-        autoScroll.stop();
-        setIsPlaying(false);
-      }
-    };
-    
-    emblaApi.on('pointerDown', onPointerDown);
-    
-    return () => {
-      emblaApi.off('pointerDown', onPointerDown);
-    };
-  }, [emblaApi, getAutoScrollPlugin]);
+  }, [emblaApi]);
   
   // If no images found, don't render the carousel
   if (images.length === 0) {
@@ -364,94 +276,76 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
       )}
       
       <div className="relative">
-        {/* Ticker Carousel with spacing */}
-        <div className="overflow-hidden rounded-none" ref={emblaRef}>
+        {/* Carousel */}
+        <div className="overflow-hidden rounded-xl bg-gray-50" ref={emblaRef}>
           <div className="flex">
-            {images.map((image, index) => {
-              
-              return (
-                <div 
-                  key={index} 
-                  className="flex-[0_0_auto] mr-6"
+            {images.map((image, index) => (
+              <div 
+                key={index} 
+                className="flex-[0_0_80%] min-w-0 px-4 md:flex-[0_0_60%]"
+              >
+                <div
+                  className={`relative aspect-[4/3] overflow-hidden rounded-lg border border-gray-200 bg-white transition-all duration-700 ease-out ${
+                    selectedIndex === index ? 'scale-100 opacity-100 shadow-xl' : 'scale-95 opacity-70'
+                  }`}
                 >
-                  {/* 
-                    * 🎨 Image Display & Spacing Options:
-                    * mr-6 - Right margin (24px gap between images, including loop) [current]
-                    * mr-8 - Larger gap (32px)
-                    * mr-4 - Smaller gap (16px)
-                    * 
-                    * h-[450px] - Fixed height for all images (current)
-                    * h-[500px] - Taller option
-                    * h-[400px] - Shorter option
-                    * 
-                    * Wide images extend horizontally (no letterboxing)
-                    * All images maintain same height for consistency
-                    */}
-                  <div className="h-[450px] flex items-center">
-                    <img
-                      src={image.url!}
-                      alt={captions[index] || `Gallery image ${index + 1}`}
-                      className="h-full w-auto object-cover"
-                    />
-                  </div>
+                  <img
+                    src={image.url!}
+                    alt={captions[index] || `Gallery image ${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
         
-        {/* Play/Pause Button */}
-        <button
-          onClick={togglePlayPause}
-          className="absolute bottom-4 right-4 w-12 h-12 rounded-full bg-white/90 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white transition-colors group"
-          aria-label={isPlaying ? 'Pause ticker' : 'Play ticker'}
-        >
-          {isPlaying ? (
-            // Pause Icon
-            <svg 
-              className="w-6 h-6 text-gray-800" 
-              fill="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+        {/* Controls */}
+        <div className="absolute inset-y-0 left-0 flex items-center px-2">
+          <button
+            onClick={scrollPrev}
+            className="rounded-full bg-white/90 p-2 shadow-md transition hover:bg-white"
+            aria-label="Previous slide"
+          >
+            <svg className="h-5 w-5 text-gray-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-          ) : (
-            // Play Icon
-            <svg 
-              className="w-6 h-6 text-gray-800" 
-              fill="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path d="M8 5v14l11-7z" />
+          </button>
+        </div>
+        
+        <div className="absolute inset-y-0 right-0 flex items-center px-2">
+          <button
+            onClick={scrollNext}
+            className="rounded-full bg-white/90 p-2 shadow-md transition hover:bg-white"
+            aria-label="Next slide"
+          >
+            <svg className="h-5 w-5 text-gray-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-          )}
-        </button>
+          </button>
+        </div>
+        
+        {/* Dots */}
+        <div className="mt-6 flex items-center justify-center gap-2">
+          {scrollSnaps.map((_, index) => (
+            <button
+              key={index}
+              className={`h-2.5 w-2.5 rounded-full transition ${
+                index === selectedIndex ? 'bg-gray-900' : 'bg-gray-300 hover:bg-gray-400'
+              }`}
+              onClick={() => scrollTo(index)}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
         
         {/* Fixed Caption Area with Fade Transitions */}
         <div className="relative mt-6 min-h-[60px] flex items-center justify-center">
-          {captions.map((caption, index) => {
-            if (!caption) return null;
-            
-            return (
-              <div
-                key={index}
-                className={`absolute inset-0 flex items-center justify-center text-center transition-opacity duration-500 px-8 ${
-                  index === activeIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                }`}
-              >
-                <p className="text-sm text-gray-600 leading-relaxed max-w-2xl">
-                  {caption}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-        
-        {/* Drag Instructions */}
-        <div className="text-center mt-4">
-          <p className="text-xs text-gray-400">
-            {isPlaying ? 'Click and drag to pause and scrub' : 'Drag to scrub • Click ▶ to resume'}
-          </p>
+          {captions[selectedIndex] && (
+            <p className="text-sm text-gray-600 leading-relaxed max-w-2xl text-center">
+              {captions[selectedIndex]}
+            </p>
+          )}
         </div>
       </div>
     </div>

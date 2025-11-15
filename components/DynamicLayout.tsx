@@ -209,8 +209,7 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
   
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
-    align: 'center',
-    duration: 20,
+    align: 'start',
   });
   
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -277,26 +276,20 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
       
       <div className="relative">
         {/* Carousel */}
-        <div className="overflow-visible rounded-xl bg-transparent" ref={emblaRef}>
-          <div className="flex items-center">
+        <div className="overflow-hidden rounded-2xl bg-white shadow-lg" ref={emblaRef}>
+          <div className="flex">
             {images.map((image, index) => (
               <div 
                 key={index} 
-                className={`px-2 transition-[flex-basis] duration-500 ease-out ${
-                  selectedIndex === index
-                    ? 'basis-[93%] md:basis-[75%]'
-                    : 'basis-[7%] md:basis-[7%]'
-                }`}
+                className="flex-[0_0_100%] px-2 md:px-6"
               >
                 <div
-                  className={`relative aspect-[16/9] overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all duration-700 ease-out ${
-                    selectedIndex === index ? 'scale-100 opacity-100 shadow-2xl' : 'scale-75 opacity-30'
-                  }`}
+                  className="relative aspect-video overflow-hidden rounded-xl bg-gray-100"
                 >
                   <img
                     src={image.url!}
                     alt={captions[index] || `Gallery image ${index + 1}`}
-                    className="h-full w-full object-contain bg-gray-50"
+                    className="h-full w-full object-cover"
                   />
                 </div>
               </div>
@@ -305,7 +298,7 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
         </div>
         
         {/* Controls */}
-        <div className="absolute inset-y-0 left-0 flex items-center px-2">
+        <div className="absolute inset-y-0 left-0 flex items-center px-2 md:px-4">
           <button
             onClick={scrollPrev}
             className="rounded-full bg-white/90 p-2 shadow-md transition hover:bg-white"
@@ -317,7 +310,7 @@ const ImageGallery = ({ blocks }: { blocks: NotionBlock[] }) => {
           </button>
         </div>
         
-        <div className="absolute inset-y-0 right-0 flex items-center px-2">
+        <div className="absolute inset-y-0 right-0 flex items-center px-2 md:px-4">
           <button
             onClick={scrollNext}
             className="rounded-full bg-white/90 p-2 shadow-md transition hover:bg-white"
